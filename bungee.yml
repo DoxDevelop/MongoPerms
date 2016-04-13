@@ -1,0 +1,4 @@
+name: MongoPerms
+version: 1.0
+main: mongoperms.bungee.MongoPermsBungee
+author: 1byte

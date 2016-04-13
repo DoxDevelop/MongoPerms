@@ -1,0 +1,7 @@
+name: MongoPerms
+version: 1.0
+main: mongperms.bukkit.MongoPerms
+authors: [1byte]
+commands:
+    permrl:
+        description: reloads all groups and player permissions
