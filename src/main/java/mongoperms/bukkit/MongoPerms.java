@@ -54,7 +54,7 @@ public class MongoPerms extends JavaPlugin {
     public static void generateAttachment(Player p) {
 
         try {
-            Field f = CraftHumanEntity.class.getDeclaredField("perm");
+            Field f = getCraftHumanEntityClass().getDeclaredField("perm");
             f.setAccessible(true);
             f.set(p, new CustomPermissibleBase(p));
         } catch (ReflectiveOperationException e1) {
