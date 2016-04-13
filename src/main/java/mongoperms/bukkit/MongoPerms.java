@@ -1,27 +1,22 @@
 package mongoperms.bukkit;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import mongoperms.MongoConnection;
 import org.bukkit.Bukkit;
-import org.bukkit.craftbukkit.v1_9_R1.entity.CraftHumanEntity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static mongoperms.MongoPermsAPI.getUUID;
 
 public class MongoPerms extends JavaPlugin {
 
@@ -45,13 +40,19 @@ public class MongoPerms extends JavaPlugin {
             if (permissions != null) {
                 groups.put(group, permissions);
             } else {
-                groups.put(group, new ArrayList<>());
+                groups.put(group, Lists.newArrayList());
             }
         });
+
+        System.out.println("[MongoPerms] Enabled version: " + getDescription().getVersion());
 
     }
 
     public static void generateAttachment(Player p) {
+
+        if (p == null || !p.isOnline()) {
+            return; //avoid bugs
+        }
 
         try {
             Field f = getCraftHumanEntityClass().getDeclaredField("perm");
@@ -64,6 +65,10 @@ public class MongoPerms extends JavaPlugin {
         PermissionAttachment attachment = p.addAttachment(instance);
 
         String group = MongoConnection.getGroup(getUUID(p.getName()));
+
+        if (group == null) {
+            group = "default";
+        }
 
         if (groups.containsKey(group)) {
             groups.get(group).forEach(s -> {
@@ -93,24 +98,6 @@ public class MongoPerms extends JavaPlugin {
         }
 
         p.removeAttachment(attachment);
-    }
-
-    private static final Map<String, UUID> uuidMap = Maps.newHashMap();
-    private static final Gson gson = new Gson();
-
-    @SneakyThrows
-    public static UUID getUUID(String p) {
-        if (uuidMap.containsKey(p)) {
-            return uuidMap.get(p);
-        } else {
-            HttpURLConnection connection = (HttpURLConnection) new URL("https://api.mojang.com/users/profiles/minecraft/" + p).openConnection();
-            UUID uuid =  UUID.fromString(gson.fromJson(new BufferedReader(new InputStreamReader(connection.getInputStream())), JsonObject.class)
-                    .get("id")
-                    .getAsString()
-                    .replaceAll("(?i)(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w+)", "$1-$2-$3-$4-$5"));
-            uuidMap.put(p, uuid);
-            return uuid;
-        }
     }
 
 }

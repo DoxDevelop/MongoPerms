@@ -3,6 +3,8 @@ package mongoperms.bukkit;
 import com.google.common.collect.Lists;
 import mongoperms.MongoConnection;
 import mongoperms.MongoPermsAPI;
+import mongoperms.bukkit.events.PermissionUpdatedEvent;
+import mongoperms.bukkit.events.PlayerPermissionUpdatedEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -11,24 +13,28 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
+import static mongoperms.MongoPermsAPI.getUUID;
+
 public class ReloadCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String s, String[] args) {
-        if (!sender.hasPermission("permissions.reload") && !sender.isOp()) {
+        if (!sender.hasPermission("perms.reload")) { //TODO configurable
             sender.sendMessage("§cYou are not allowed to use this command.");
             return true;
         }
 
         if (args.length > 0) {
             Player p = Bukkit.getPlayer(args[0]);
-            if (p == null) {
+            if (p == null || !p.isOnline()) {
+                sender.sendMessage("§cCan't find player: " + args[0]);
                 return true;
             }
             MongoPerms.unlogAttachment(p);
             MongoPerms.generateAttachment(p);
-            MongoPermsAPI.clear(MongoPermsAPI.getUUID(p.getName()));
+            MongoPermsAPI.clear(getUUID(p.getName()));
             Bukkit.getPluginManager().callEvent(new PlayerPermissionUpdatedEvent(p));
+            sender.sendMessage("§aPlayer " + p.getName() + " has been reloaded.");
             return true;
         }
 
@@ -46,10 +52,12 @@ public class ReloadCommand implements CommandExecutor {
             });
         }
 
+        sender.sendMessage("§a" + MongoPerms.groups.size() + " groups loaded.");
         MongoPermsAPI.clear();
         Bukkit.getPluginManager().callEvent(new PermissionUpdatedEvent(true));
 
         Bukkit.getOnlinePlayers().forEach(MongoPerms::generateAttachment);
+        sender.sendMessage("§a" + MongoPerms.attachments.size() + " players registered.");
         return false;
     }
 }

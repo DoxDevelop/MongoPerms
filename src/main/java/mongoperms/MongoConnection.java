@@ -5,14 +5,14 @@ import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import lombok.Getter;
 import org.bson.Document;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Filters.eq;
 
 public class MongoConnection {
 
@@ -42,7 +42,7 @@ public class MongoConnection {
         }
 
         collection.insertOne(new Document("uuid", uuid.toString())
-                .append("group", "default"));
+                .append("group", "default")); //TODO make configurable
     }
 
     public static void setGroup(UUID uuid, String group) {
@@ -53,14 +53,21 @@ public class MongoConnection {
     public static String getGroup(UUID uuid) {
         MongoCollection<Document> collection = getCollection("perms", "users_in_groups");
 
-        return collection.find(eq("uuid", uuid.toString())).first().getString("group");
+        Document doc = collection.find(eq("uuid", uuid.toString())).first();
+
+        return doc == null ? null : doc.getString("group");
     }
 
-    public static void addGroup(String group) {
+    public static Result addGroup(String group) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
+        if (collection.find(eq("group", group)).first() != null) {
+            return Result.RESULT_GROUP_EXISTS;
+        }
+
         collection.insertOne(new Document("group", group)
-                .append("permissions", new ArrayList<>()));
+                .append("permissions", Lists.newArrayList()));
+        return Result.RESULT_SUCCESS;
     }
 
     public static List<String> getGroups() {
@@ -71,41 +78,66 @@ public class MongoConnection {
         return groups;
     }
 
-    public static void removeGroup(String name) {
+    public static boolean removeGroup(String name) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
-        collection.deleteOne(eq("group", name));
+        if (collection.find(Filters.eq("group", name)).first() != null) {
+            collection.deleteOne(eq("group", name));
+            return true;
+        }
+        return false;
     }
 
     @SuppressWarnings("unchecked")
-    public static void addPermission(String group, String permission) {
+    public static Result addPermission(String group, String permission) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
         Document old = collection.find(eq("group", group)).first();
+
+        if (old == null) {
+            return Result.RESULT_UNKNOWN_GROUP;
+        }
+
         List<String> perms = (List<String>) old.get("permissions");
         perms.add(permission);
         collection.replaceOne(eq("group", group), new Document("group", group).append("permissions", perms));
+        return Result.RESULT_SUCCESS;
     }
 
     @SuppressWarnings("unchecked")
-    public static void removePermission(String group, String permission) {
+    public static Result removePermission(String group, String permission) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
         Document old = collection.find(eq("group", group)).first();
+
+        if (old == null) {
+            return Result.RESULT_UNKNOWN_GROUP;
+        }
+
         List<String> perms = (List<String>) old.get("permissions");
         if (perms.contains(permission)) {
             perms.remove(permission);
             collection.replaceOne(eq("group", group), new Document("group", group).append("permissions", perms));
+            return Result.RESULT_SUCCESS;
         }
+        return Result.RESULT_UNKNOWN_PERMISSION;
     }
 
     @SuppressWarnings("unchecked")
     public static List<String> getPermissions(String group) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
-        if (collection.find(eq("group", group)).first() == null) {
+        Document doc = collection.find(eq("group", group)).first();
+        if (doc == null) {
             return Lists.newArrayList();
         }
-        return (List<String>) collection.find(eq("group", group)).first().get("permissions");
+        return (List<String>) doc.get("permissions");
+    }
+
+    public enum Result {
+        RESULT_SUCCESS,
+        RESULT_UNKNOWN_GROUP,
+        RESULT_UNKNOWN_PERMISSION,
+        RESULT_GROUP_EXISTS
     }
 
 }

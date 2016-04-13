@@ -1,16 +1,17 @@
-package mongoperms.bukkit;
+package mongoperms.bukkit.events;
 
-import org.bukkit.entity.Player;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.player.PlayerEvent;
 
-public class PlayerPermissionUpdatedEvent extends PlayerEvent {
+@RequiredArgsConstructor
+public class PermissionUpdatedEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
 
-    public PlayerPermissionUpdatedEvent(Player who) {
-        super(who);
-    }
+    @Getter
+    private final boolean success;
 
     @Override
     public HandlerList getHandlers() {
