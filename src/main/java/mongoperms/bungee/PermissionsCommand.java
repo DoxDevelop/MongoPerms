@@ -28,7 +28,7 @@ public class PermissionsCommand extends Command {
     public void execute(CommandSender sender, String[] args) {
         BungeeCord.getInstance().getScheduler().runAsync(MongoPermsBungee.getInstance(), () -> {
             if (args.length == 0) {
-                sender.sendMessage(new ComponentBuilder("Available options: addgroup, removegroup, setgroup, group, user, add, remove, groups, addall, putall").color(ChatColor.YELLOW).create());
+                sender.sendMessage(new ComponentBuilder("Available options: addgroup, removegroup, setgroup, group, user, add, remove, groups, addall, putall, reload").color(ChatColor.YELLOW).create());
                 sender.sendMessage(new TextComponent("§eMore information by using: /perms <subcommand>"));
                 return;
             }
