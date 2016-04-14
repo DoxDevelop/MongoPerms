@@ -12,13 +12,22 @@ public class CustomPermissibleBase extends PermissibleBase {
 
     @Override
     public boolean hasPermission(String inName) {
-        //override to check * permission which is not usually implemented by bukkit
-        return super.hasPermission("*") || super.hasPermission(inName);
+
+        if (MongoPerms.getSettings().getPermissionNode().equals("none")) {
+            return super.hasPermission(inName);
+        }
+
+        return super.hasPermission(MongoPerms.getSettings().getPermissionNode()) || super.hasPermission(inName);
     }
 
     @Override
     public boolean hasPermission(Permission perm) {
-        return super.hasPermission("*") || super.hasPermission(perm);
+
+        if (MongoPerms.getSettings().getPermissionNode().equals("none")) {
+            return super.hasPermission(perm);
+        }
+
+        return super.hasPermission(MongoPerms.getSettings().getPermissionNode()) || super.hasPermission(perm);
     }
 
 }

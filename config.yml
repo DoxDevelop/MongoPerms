@@ -1,0 +1,15 @@
+#MongoDB Configuration
+host: localhost
+port: 27017
+
+#enable Vault bridge (ignore if you don't use Vault)
+use-vault: true
+
+#set name of "default" group
+default-group-name: default
+
+#permission node for all permissions, use "none" to disable this node
+all-permissions: '*'
+
+#need op to use /permrl
+need-op: false

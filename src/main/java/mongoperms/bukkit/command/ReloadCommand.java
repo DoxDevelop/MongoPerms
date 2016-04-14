@@ -1,8 +1,9 @@
-package mongoperms.bukkit;
+package mongoperms.bukkit.command;
 
 import com.google.common.collect.Lists;
 import mongoperms.MongoConnection;
 import mongoperms.MongoPermsAPI;
+import mongoperms.bukkit.MongoPerms;
 import mongoperms.bukkit.events.PermissionUpdatedEvent;
 import mongoperms.bukkit.events.PlayerPermissionUpdatedEvent;
 import org.bukkit.Bukkit;
@@ -15,12 +16,18 @@ import java.util.List;
 
 import static mongoperms.MongoPermsAPI.getUUID;
 
+@mongoperms.bukkit.command.Command(name = "permrl", description = "reloads all groups or player permissions", aliases = {"permreload", "permissionreload"})
 public class ReloadCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String s, String[] args) {
-        if (!sender.hasPermission("perms.reload")) { //TODO configurable
+        if (!sender.hasPermission("mongoperms.reload")) {
             sender.sendMessage("§cYou are not allowed to use this command.");
+            return true;
+        }
+
+        if (MongoPerms.getSettings().isNeedOp() && !sender.isOp()) {
+            sender.sendMessage("§cYou need op to execute this command.");
             return true;
         }
 

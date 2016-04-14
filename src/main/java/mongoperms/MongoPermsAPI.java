@@ -49,7 +49,7 @@ public class MongoPermsAPI {
             }
         }
         if (permissions == null) {
-            PERMISSIONS_BY_GROUP.put(group, MongoConnection.getPermissions(group)); //May cause exception TODO FIX!
+            PERMISSIONS_BY_GROUP.put(group, MongoConnection.getPermissions(group)); //nvm, there will be at least an empty list
             permissions = PERMISSIONS_BY_GROUP.get(group);
         }
         return ImmutableList.copyOf(permissions);

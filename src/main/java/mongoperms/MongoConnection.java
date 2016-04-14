@@ -7,6 +7,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import lombok.Getter;
+import mongoperms.bungee.MongoPermsBungee;
 import org.bson.Document;
 
 import java.util.List;
@@ -18,12 +19,16 @@ public class MongoConnection {
 
     @Getter
     private static MongoClient client;
+    @Getter
     private static boolean initialized = false;
+    private static String DEFAULT_GROUP;
 
-    public static void load() {
+    public static void load(String host, int port, String defaultGroup) {
         Preconditions.checkArgument(!initialized, "MongoConnection already initialized.");
-        client = new MongoClient("localhost"); //TODO add configuration support
+        client = new MongoClient(host, port);
+        DEFAULT_GROUP = defaultGroup;
         initialized = true;
+        MongoPermsBungee.getInstance().reloadGroups();
     }
 
     public static MongoDatabase getDatabase(String name) {
@@ -42,7 +47,7 @@ public class MongoConnection {
         }
 
         collection.insertOne(new Document("uuid", uuid.toString())
-                .append("group", "default")); //TODO make configurable
+                .append("group", DEFAULT_GROUP));
     }
 
     public static void setGroup(UUID uuid, String group) {
@@ -133,11 +138,26 @@ public class MongoConnection {
         return (List<String>) doc.get("permissions");
     }
 
+    public static Result setPermissions(String group, List<String> permissions) {
+        MongoCollection<Document> collection = getCollection("perms", "groups");
+
+        Document old = collection.find(eq("group", group)).first();
+
+        if (old == null) {
+            return Result.RESULT_UNKNOWN_ERROR;
+        }
+
+        old.put("permissions", permissions);
+        collection.replaceOne(eq("group", group), old);
+        return Result.RESULT_SUCCESS;
+    }
+
     public enum Result {
         RESULT_SUCCESS,
         RESULT_UNKNOWN_GROUP,
         RESULT_UNKNOWN_PERMISSION,
-        RESULT_GROUP_EXISTS
+        RESULT_GROUP_EXISTS,
+        RESULT_UNKNOWN_ERROR
     }
 
 }

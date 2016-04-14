@@ -2,6 +2,4 @@ name: MongoPerms
 version: 1.1
 main: mongoperms.bukkit.MongoPerms
 authors: [1byte]
-commands:
-    permrl:
-        description: reloads all groups and player permissions
+softdepend: [Vault]
