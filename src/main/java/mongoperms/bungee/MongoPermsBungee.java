@@ -9,8 +9,8 @@ import net.md_5.bungee.api.event.PermissionCheckEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.command.ConsoleCommandSender;
 import net.md_5.bungee.event.EventHandler;
+import org.bukkit.command.ConsoleCommandSender;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class MongoPermsBungee extends Plugin implements Listener {
 
         settings = Configuration.load(this);
 
-        getProxy().getScheduler().runAsync(this, () -> MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup())); //Need to run async because of BungeeCord Security Manager
+        getProxy().getScheduler().runAsync(this, () -> MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), true)); //Need to run async because of BungeeCord Security Manager
 
         getProxy().getPluginManager().registerListener(this, this);
         getProxy().getPluginManager().registerCommand(this, new PermissionsCommand());

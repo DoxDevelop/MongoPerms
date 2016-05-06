@@ -16,6 +16,8 @@ public class Configuration {
     private int mongoPort;
     private String defaultGroup;
     private boolean useVault;
+    private String mongoUsername;
+    private String mongoPassword;
 
     public static Configuration load(Plugin plugin) {
         Configuration config = new Configuration();
@@ -27,6 +29,9 @@ public class Configuration {
         config.mongoHost = cfg.getString("host");
         config.mongoPort = cfg.getInt("port");
         config.useVault = cfg.getBoolean("use-vault");
+        config.useVault = cfg.getBoolean("use-vault");
+        config.mongoUsername = cfg.getString("username");
+        config.mongoPassword = cfg.getString("password");
 
         return config;
     }

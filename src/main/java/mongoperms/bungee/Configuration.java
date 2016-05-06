@@ -1,6 +1,5 @@
 package mongoperms.bungee;
 
-
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +20,8 @@ public class Configuration {
     private int mongoPort;
     private String defaultGroup;
     private boolean useVault;
+    private String mongoUsername;
+    private String mongoPassword;
 
     @SneakyThrows
     public static Configuration load(Plugin plugin) {
@@ -33,6 +34,8 @@ public class Configuration {
         config.mongoHost = cfg.getString("host");
         config.mongoPort = cfg.getInt("port");
         config.useVault = cfg.getBoolean("use-vault");
+        config.mongoUsername = cfg.getString("username");
+        config.mongoPassword = cfg.getString("password");
 
         return config;
     }
