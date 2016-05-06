@@ -4,9 +4,9 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import mongoperms.MongoConnection;
 import mongoperms.MongoConnection.Result;
-import net.md_5.bungee.BungeeCord;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -26,7 +26,7 @@ public class PermissionsCommand extends Command {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        BungeeCord.getInstance().getScheduler().runAsync(MongoPermsBungee.getInstance(), () -> {
+        ProxyServer.getInstance().getScheduler().runAsync(MongoPermsBungee.getInstance(), () -> {
             if (args.length == 0) {
                 sender.sendMessage(new ComponentBuilder("Available options: addgroup, removegroup, setgroup, group, user, add, remove, groups, addall, putall, reload").color(ChatColor.YELLOW).create());
                 sender.sendMessage(new TextComponent("§eMore information by using: /perms <subcommand>"));
@@ -68,7 +68,7 @@ public class PermissionsCommand extends Command {
                 if (args.length != 3) {
                     sender.sendMessage(new TextComponent("§eUsage: /perms setgroup <Player> <Group>"));
                 } else {
-                    ProxiedPlayer p = BungeeCord.getInstance().getPlayer(args[1]);
+                    ProxiedPlayer p = ProxyServer.getInstance().getPlayer(args[1]);
                     UUID uuid = p == null ? getUUID(args[1]) : p.getUniqueId();
                     String group = args[2];
                     MongoConnection.setGroup(uuid, group);
@@ -100,7 +100,7 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                ProxiedPlayer p = BungeeCord.getInstance().getPlayer(args[1]);
+                ProxiedPlayer p = ProxyServer.getInstance().getPlayer(args[1]);
                 String name;
                 UUID uuid;
 
@@ -257,7 +257,7 @@ public class PermissionsCommand extends Command {
             } else if (subCommand.equalsIgnoreCase("reload")) {
 
                 if (args.length == 2) {
-                    ProxiedPlayer p = BungeeCord.getInstance().getPlayer(args[1]);
+                    ProxiedPlayer p = ProxyServer.getInstance().getPlayer(args[1]);
                     if (p == null) {
                         sender.sendMessage(new TextComponent("§cCan't find player: " + args[1]));
                         return;

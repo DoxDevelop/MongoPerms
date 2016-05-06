@@ -1,5 +1,6 @@
 package mongoperms;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
@@ -49,7 +50,7 @@ public class MongoPermsAPI {
             }
         }
         if (permissions == null) {
-            PERMISSIONS_BY_GROUP.put(group, MongoConnection.getPermissions(group)); //nvm, there will be at least an empty list
+            PERMISSIONS_BY_GROUP.put(group, MongoConnection.getPermissions(group));
             permissions = PERMISSIONS_BY_GROUP.get(group);
         }
         return ImmutableList.copyOf(permissions);
@@ -95,9 +96,7 @@ public class MongoPermsAPI {
             return UUID_MAP.get(name);
         } else {
             HttpURLConnection connection = (HttpURLConnection) new URL("https://api.mojang.com/users/profiles/minecraft/" + name).openConnection();
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                throw new IllegalArgumentException("Name is invalid. Response code: " + connection.getResponseCode());
-            }
+            Preconditions.checkArgument(connection.getResponseCode() == HttpURLConnection.HTTP_OK, "Name is invalid. Response code: %s", String.valueOf(connection.getResponseCode()));
             UUID uuid = UUID.fromString(gson.fromJson(new BufferedReader(new InputStreamReader(connection.getInputStream())), JsonObject.class)
                     .get("id")
                     .getAsString()
@@ -117,6 +116,7 @@ public class MongoPermsAPI {
 
     /**
      * Do not use this unless you know what you're doing
+     *
      * @param uuid player to get cleaned
      */
     public static void clear(UUID uuid) {

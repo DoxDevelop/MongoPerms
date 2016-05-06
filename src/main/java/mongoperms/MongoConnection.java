@@ -3,13 +3,15 @@ package mongoperms;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import lombok.Getter;
 import mongoperms.bungee.MongoPermsBungee;
 import org.bson.Document;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,20 +25,18 @@ public class MongoConnection {
     private static boolean initialized = false;
     private static String DEFAULT_GROUP;
 
-    public static void load(String host, int port, String defaultGroup) {
+    public static void load(String host, int port, String defaultGroup, String username, String password, boolean isBungee) {
         Preconditions.checkArgument(!initialized, "MongoConnection already initialized.");
-        client = new MongoClient(host, port);
+        client = new MongoClient(new ServerAddress(host, port), Collections.singletonList(MongoCredential.createCredential(username, "admin", password.toCharArray())));
         DEFAULT_GROUP = defaultGroup;
         initialized = true;
-        MongoPermsBungee.getInstance().reloadGroups();
-    }
-
-    public static MongoDatabase getDatabase(String name) {
-        return client.getDatabase(name);
+        if (isBungee) {
+            MongoPermsBungee.getInstance().reloadGroups();
+        }
     }
 
     public static MongoCollection<Document> getCollection(String database, String name) {
-        return getDatabase(database).getCollection(name);
+        return client.getDatabase(database).getCollection(name);
     }
 
     public static void registerPlayer(UUID uuid) {

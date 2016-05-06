@@ -15,12 +15,9 @@ import java.util.Set;
 
 public class VaultMongoBridge extends Permission {
 
-    public VaultMongoBridge(Plugin plugin) {
-        Plugin perms = plugin.getServer().getPluginManager().getPlugin("MongoPerms");
-        if (perms != null && perms.isEnabled()) {
-            plugin.getLogger().info(String.format("[%s][Permission] %s hooked.", plugin.getDescription().getName(), "MongoPerms"));
-            Bukkit.getServicesManager().register(Permission.class, this, plugin, ServicePriority.Highest);
-        }
+    public VaultMongoBridge(Plugin vault, Plugin perms) {
+        System.out.printf("[%s][Permission] %s hooked.", vault.getDescription().getName(), "MongoPerms");
+        Bukkit.getServicesManager().register(Permission.class, this, perms, ServicePriority.Highest);
     }
 
     @SuppressWarnings("deprecation") //only for compiler... don't like errors / warnings :D

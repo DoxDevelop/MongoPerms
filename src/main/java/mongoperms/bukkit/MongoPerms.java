@@ -60,12 +60,12 @@ public class MongoPerms extends JavaPlugin {
         }
 
         settings = Configuration.load(this);
-        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup());
+        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false);
 
         if (settings.isUseVault()) {
             Plugin vault = Bukkit.getPluginManager().getPlugin("Vault");
             if (vault != null) {
-                new VaultMongoBridge(vault);
+                new VaultMongoBridge(vault, this);
             }
         }
 
@@ -108,7 +108,7 @@ public class MongoPerms extends JavaPlugin {
         if (groups.containsKey(group)) {
             groups.get(group).forEach(s -> {
                 if (s.startsWith("-")) {
-                    attachment.setPermission(s.substring(1, s.length()), false);
+                    attachment.setPermission(s.substring(1), false);
                 } else {
                     attachment.setPermission(s, true);
                 }
@@ -118,9 +118,8 @@ public class MongoPerms extends JavaPlugin {
         attachments.put(getUUID(p.getName()), attachment);
     }
 
-    @SneakyThrows
     @SuppressWarnings("unchecked")
-    private static Class<? extends HumanEntity> getCraftHumanEntityClass() {
+    private static Class<? extends HumanEntity> getCraftHumanEntityClass() throws ReflectiveOperationException {
         return (Class<? extends HumanEntity>) Class.forName(Bukkit.getServer().getClass().getPackage().getName() + ".entity.CraftHumanEntity");
     }
 
@@ -142,6 +141,7 @@ public class MongoPerms extends JavaPlugin {
         Command command = executor.getClass().getAnnotation(Command.class);
 
         if (command == null) {
+            System.err.println("Couldn't register " + executor.getClass().getSimpleName() + "! @Command not found.");
             return;
         }
 
@@ -167,7 +167,7 @@ public class MongoPerms extends JavaPlugin {
         }
 
         map.register(getClass().getSimpleName().toLowerCase(), cmd);
-        System.out.println(String.format("[MongoPerms] Registered command %s", command.name()));
+        System.out.printf("[MongoPerms] Registered command %s", command.name());
     }
 
     @SneakyThrows
@@ -178,8 +178,15 @@ public class MongoPerms extends JavaPlugin {
     }
 
     @SneakyThrows
+    @SuppressWarnings("unchecked")
     public <T> T newInstance(Class<? extends T> clazz) {
-        return clazz.newInstance(); //throws Exception if there's a constructor with multiple args!
+        Constructor<T> constructor = (Constructor<T>) clazz.getConstructors()[0];
+
+        if (constructor.getParameterTypes().length == 0) {
+            return constructor.newInstance();
+        } else {
+            return constructor.newInstance(this);
+        }
     }
 
     @SneakyThrows

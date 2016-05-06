@@ -1,6 +1,8 @@
 #MongoDB Configuration
 host: localhost
 port: 27017
+username: username
+password: password
 
 #enable Vault bridge (ignore if you don't use Vault)
 use-vault: true
