@@ -1,9 +1,10 @@
 package mongoperms.bungee;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
 import mongoperms.MongoConnection;
 import mongoperms.MongoConnection.Result;
+import mongoperms.MongoPermsAPI;
+import mongoperms.Group;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -12,6 +13,7 @@ import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -71,8 +73,11 @@ public class PermissionsCommand extends Command {
                     ProxiedPlayer p = ProxyServer.getInstance().getPlayer(args[1]);
                     UUID uuid = p == null ? getUUID(args[1]) : p.getUniqueId();
                     String group = args[2];
-                    MongoConnection.setGroup(uuid, group);
-                    sender.sendMessage(new TextComponent("§aUser " + (p == null ? args[0] : p.getName()) + " is now a \"" + group + "\""));
+                    if (MongoPermsAPI.setGroup(uuid, Group.getGroup(group))) {
+                        sender.sendMessage(new TextComponent("§aUser " + (p == null ? args[0] : p.getName()) + " is now a \"" + group + "\""));
+                    } else {
+                        sender.sendMessage(new TextComponent("§cCan't find group \"" + group + "\"!"));
+                    }
                 }
 
             } else if (subCommand.equalsIgnoreCase("group")) {
@@ -82,16 +87,23 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                String group = args[1];
-                List<String> permissions = MongoConnection.getPermissions(group);
+                Group group = Group.getGroup(args[1]);
 
-                if (permissions.size() == 0) {
+                if (group == null) {
+                    sender.sendMessage(new TextComponent("§cCan't find group \"" + args[1] + "\"!"));
+                    return;
+                }
+
+                if (group.getPermissions().size() == 0) {
                     sender.sendMessage(new TextComponent("§cNo permissions found for group \"" + group + "\"."));
                     return;
                 }
 
-                sender.sendMessage(new TextComponent("§eGroup \"" + group + "\" has the following permissions:"));
-                permissions.forEach(s -> sender.sendMessage(new TextComponent(" §e- " + s)));
+                if (group.getInherits().size() > 0) {
+                    sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" inherits permissions from groups: ").color(ChatColor.YELLOW).append(Joiner.on(", ").join(group.getInherits())).create());
+                }
+                sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" has the following permissions:").color(ChatColor.YELLOW).create());
+                group.getPermissions().forEach(s -> sender.sendMessage(new TextComponent(" §e- " + s)));
 
             } else if (subCommand.equalsIgnoreCase("user")) {
 
@@ -119,7 +131,7 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                List<String> permissions = MongoConnection.getPermissions(group);
+                Collection<String> permissions = MongoPermsAPI.getPermissions(group);
                 sender.sendMessage(new TextComponent("§ePlayer \"" + name + "\" has the following permissions:"));
                 permissions.forEach(s -> sender.sendMessage(new TextComponent(" §e- " + s)));
                 sender.sendMessage(new TextComponent("§eGroup: " + group));
@@ -142,6 +154,54 @@ public class PermissionsCommand extends Command {
                         sender.sendMessage(new TextComponent("§cCan't find group: " + group));
                         break;
                 }
+
+            } else if (subCommand.equalsIgnoreCase("addinheritance")) {
+
+                if (args.length != 3) {
+                    sender.sendMessage(new TextComponent("§cUsage: /perms addinheritance <Group> <Group>"));
+                    sender.sendMessage(new ComponentBuilder("First group is the group, where the inheritance is being added to.").color(ChatColor.YELLOW).create());
+                    return;
+                }
+
+                Group group = Group.getGroup(args[1]);
+                Group inherits = Group.getGroup(args[2]);
+
+                if (group == null) {
+                    sender.sendMessage(new TextComponent("§cGroup " + group + " doens't exist!"));
+                    return;
+                }
+                if (inherits == null) {
+                    sender.sendMessage(new TextComponent("§cGroup " + inherits + " doens't exist!"));
+                    return;
+                }
+
+                group.addInheritance(inherits);
+
+                sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" now inherits group \"" + inherits.getName() + "\".").color(ChatColor.GREEN).create());
+
+            } else if (subCommand.equalsIgnoreCase("removeinheritance")) {
+
+                if (args.length != 3) {
+                    sender.sendMessage(new TextComponent("§cUsage: /perms removeinheritance <Group> <Group>"));
+                    sender.sendMessage(new ComponentBuilder("First group is the group, where the inheritance is being removed from.").color(ChatColor.YELLOW).create());
+                    return;
+                }
+
+                Group group = Group.getGroup(args[1]);
+                Group inherits = Group.getGroup(args[2]);
+
+                if (group == null) {
+                    sender.sendMessage(new TextComponent("§cGroup " + group + " doens't exist!"));
+                    return;
+                }
+                if (inherits == null) {
+                    sender.sendMessage(new TextComponent("§cGroup " + inherits + " doens't exist!"));
+                    return;
+                }
+
+                group.removeInheritance(inherits);
+
+                sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" no longer inherits group \"" + inherits.getName() + "\".").color(ChatColor.GREEN).create());
 
             } else if (subCommand.equalsIgnoreCase("remove")) {
 
@@ -168,7 +228,7 @@ public class PermissionsCommand extends Command {
 
             } else if (subCommand.equalsIgnoreCase("groups")) {
 
-                List<String> groups = MongoConnection.getGroups().stream().sorted().collect(Collectors.toList());
+                List<String> groups = Group.getGroups().stream().map(Group::getName).sorted().collect(Collectors.toList());
 
                 if (groups.size() == 0) {
                     sender.sendMessage(new TextComponent("§cNo groups found."));
@@ -188,36 +248,24 @@ public class PermissionsCommand extends Command {
                 String fromGroup = args[1];
                 String toGroup = args[2];
 
-                List<String> groups = MongoConnection.getGroups();
-
-                if (!Iterables.contains(groups, fromGroup)) {
+                if (Group.getGroup(fromGroup) == null) {
                     sender.sendMessage(new TextComponent("§cCan't find group: " + fromGroup));
                     return;
-                } else if (!Iterables.contains(groups, toGroup)) {
+                } else if (Group.getGroup(toGroup) == null) {
                     sender.sendMessage(new TextComponent("§cCan't find group: " + toGroup));
                     return;
                 }
 
-                List<String> fromPermissions = MongoConnection.getPermissions(fromGroup);
+                Group from = Group.getGroup(fromGroup);
+                Group to = Group.getGroup(toGroup);
 
-                if (fromPermissions.size() == 0) {
+                if (from.getPermissions().size() == 0) {
                     sender.sendMessage(new TextComponent("§cNo permissions found in group \"" + fromGroup + "\"."));
                     return;
                 }
 
-                List<String> toPermissions = MongoConnection.getPermissions(toGroup);
-
-                Iterables.addAll(toPermissions, fromPermissions);
-
-                switch (MongoConnection.setPermissions(toGroup, toPermissions)) {
-                    case RESULT_SUCCESS:
-                        sender.sendMessage(new ComponentBuilder("Successfully added all permissions from group \"" + fromGroup + "\" to group \"" + toGroup + "\".").color(ChatColor.GREEN).create());
-                        break;
-                    case RESULT_UNKNOWN_ERROR:
-                        sender.sendMessage(new TextComponent("§cCouldn't transfer permissions."));
-                        break;
-                }
-
+                to.addAll(from.getPermissions());
+                sender.sendMessage(new ComponentBuilder("Successfully added all permissions from group \"" + fromGroup + "\" to group \"" + toGroup + "\".").color(ChatColor.GREEN).create());
             } else if (subCommand.equalsIgnoreCase("putall")) {
 
                 if (args.length != 3) {
@@ -228,31 +276,24 @@ public class PermissionsCommand extends Command {
                 String fromGroup = args[1];
                 String toGroup = args[2];
 
-                List<String> groups = MongoConnection.getGroups();
-
-                if (!Iterables.contains(groups, fromGroup)) {
+                if (Group.getGroup(fromGroup) == null) {
                     sender.sendMessage(new TextComponent("§cCan't find group: " + fromGroup));
                     return;
-                } else if (!Iterables.contains(groups, toGroup)) {
+                } else if (Group.getGroup(toGroup) == null) {
                     sender.sendMessage(new TextComponent("§cCan't find group: " + toGroup));
                     return;
                 }
 
-                List<String> fromPermissions = MongoConnection.getPermissions(fromGroup);
+                Group from = Group.getGroup(fromGroup);
+                Group to = Group.getGroup(toGroup);
 
-                if (fromPermissions.size() == 0) {
+                if (from.getPermissions().size() == 0) {
                     sender.sendMessage(new TextComponent("§cNo permissions found in group \"" + fromGroup + "\"."));
                     return;
                 }
 
-                switch (MongoConnection.setPermissions(toGroup, fromPermissions)) {
-                    case RESULT_SUCCESS:
-                        sender.sendMessage(new ComponentBuilder("Successfully put all permissions from group \"" + fromGroup + "\" into group \"" + toGroup + "\".").color(ChatColor.GREEN).create());
-                        break;
-                    case RESULT_UNKNOWN_ERROR:
-                        sender.sendMessage(new TextComponent("§cCouldn't transfer permissions."));
-                        break;
-                }
+                to.setPermissions(from.getPermissions());
+                sender.sendMessage(new ComponentBuilder("Successfully put all permissions from group \"" + fromGroup + "\" into group \"" + toGroup + "\".").color(ChatColor.GREEN).create());
 
             } else if (subCommand.equalsIgnoreCase("reload")) {
 
@@ -262,12 +303,12 @@ public class PermissionsCommand extends Command {
                         sender.sendMessage(new TextComponent("§cCan't find player: " + args[1]));
                         return;
                     }
-                    MongoPermsBungee.getInstance().reloadPlayer(p);
+                    MongoPermsAPI.clear(p.getUniqueId());
                     sender.sendMessage(new TextComponent("§aPlayer \"" + p.getName() + "\" has been reloaded"));
                     return;
                 }
 
-                MongoPermsBungee.getInstance().reloadGroups();
+                Group.reloadGroups();
                 sender.sendMessage(new TextComponent("§aGroups have been reloaded."));
 
             } else {

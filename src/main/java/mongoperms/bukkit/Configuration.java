@@ -18,6 +18,7 @@ public class Configuration {
     private boolean useVault;
     private String mongoUsername;
     private String mongoPassword;
+    private boolean useAuthentication;
 
     public static Configuration load(Plugin plugin) {
         Configuration config = new Configuration();
@@ -32,6 +33,7 @@ public class Configuration {
         config.useVault = cfg.getBoolean("use-vault");
         config.mongoUsername = cfg.getString("username");
         config.mongoPassword = cfg.getString("password");
+        config.useAuthentication = cfg.getBoolean("useAuthentication");
 
         return config;
     }
