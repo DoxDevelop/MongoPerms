@@ -3,15 +3,15 @@ package mongoperms.bukkit.vault;
 import mongoperms.MongoConnection;
 import mongoperms.MongoConnection.Result;
 import mongoperms.MongoPermsAPI;
-import mongoperms.bukkit.MongoPerms;
+import mongoperms.Group;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
 
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class VaultMongoBridge extends Permission {
 
@@ -60,8 +60,8 @@ public class VaultMongoBridge extends Permission {
     @SuppressWarnings("deprecation")
     @Override
     public boolean groupHas(String s, String s1, String s2) {
-        List<String> permissions = MongoPermsAPI.getPermissions(s2);
-        return permissions.contains(s2);
+        Group group = Group.getGroup(s1);
+        return group.getPermissions().contains(s2);
     }
 
     @SuppressWarnings("deprecation")
@@ -103,13 +103,13 @@ public class VaultMongoBridge extends Permission {
     @SuppressWarnings("deprecation")
     @Override
     public String getPrimaryGroup(String world, String player) {
-        return MongoPermsAPI.getGroup(MongoPermsAPI.getUUID(player));
+        return MongoPermsAPI.getGroup(MongoPermsAPI.getUUID(player)).getName();
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public String[] getGroups() {
-        Set<String> groups = MongoPerms.groups.keySet();
+        Set<String> groups = Group.getGroups().stream().map(Group::getName).collect(Collectors.toSet());
         return groups.toArray(new String[0]);
     }
 

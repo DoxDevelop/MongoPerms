@@ -1,7 +1,6 @@
 package mongoperms;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -11,20 +10,19 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
 public class MongoPermsAPI {
 
-    private static final Map<UUID, String> GROUPS_BY_PLAYER = Maps.newHashMap();
-    private static final Map<String, List<String>> PERMISSIONS_BY_GROUP = Maps.newHashMap();
+    private static final Map<UUID, Group> GROUPS_BY_PLAYER = Maps.newHashMap();
     private static final Map<String, UUID> UUID_MAP = Maps.newHashMap();
 
     private static final Gson gson = new Gson();
 
     /**
-     * Get a List of all permissions by the player
+     * Get a Collection of all permissions by the player
      * <br>
      * NOTE: Due to Bungee/Bukkit compability, the player can be only provided by the UUID!
      * <br>
@@ -33,53 +31,44 @@ public class MongoPermsAPI {
      * @param uuid the UUID to get the permissions of
      * @return List with permissions or null if group not found
      */
-    public static List<String> getPermissionsOfPlayer(UUID uuid) {
-        String group = getGroup(uuid);
-        if (!PERMISSIONS_BY_GROUP.containsKey(group)) {
-            PERMISSIONS_BY_GROUP.put(group, MongoConnection.getPermissions(group));
-        }
-        return ImmutableList.copyOf(PERMISSIONS_BY_GROUP.get(group));
+    public static Collection<String> getPermissionsOfPlayer(UUID uuid) {
+        return getGroup(uuid).getPermissions();
     }
 
-    public static List<String> getPermissions(String group) {
-        List<String> permissions = null;
-        for (String groupName : PERMISSIONS_BY_GROUP.keySet()) {
-            if (group.equalsIgnoreCase(groupName)) {
-                permissions = PERMISSIONS_BY_GROUP.get(groupName);
-                break;
-            }
-        }
-        if (permissions == null) {
-            PERMISSIONS_BY_GROUP.put(group, MongoConnection.getPermissions(group));
-            permissions = PERMISSIONS_BY_GROUP.get(group);
-        }
-        return ImmutableList.copyOf(permissions);
+    public static Collection<String> getPermissions(String group) {
+        return Group.getGroup(group).getPermissions();
     }
 
     /**
-     * Get group name where player is in
+     * Get group where player is in
      * <br><br>
      * <b>NOTE:</b> The default is <i>"default"</i>
      *
-     * @param uuid thee UUID to get the group of
+     * @param uuid the UUID to get the group of
      * @return the group name
      */
-    public static String getGroup(UUID uuid) {
-        String group;
+    public static Group getGroup(UUID uuid) {
         if (GROUPS_BY_PLAYER.containsKey(uuid)) {
-            group = GROUPS_BY_PLAYER.get(uuid);
+            return GROUPS_BY_PLAYER.get(uuid);
         } else {
-            group = MongoConnection.getGroup(uuid);
-            GROUPS_BY_PLAYER.put(uuid, MongoConnection.getGroup(uuid));
+            Group group = Group.getGroup(MongoConnection.getGroup(uuid));
+            GROUPS_BY_PLAYER.put(uuid, group);
+            return group;
         }
-        return group;
     }
 
     /**
-     * @see MongoConnection#setGroup(UUID, String)
+     * Set group of player
+     * @param uuid the UUID of the player
+     * @param group new group
      */
-    public static void setGroup(UUID uuid, String group) {
-        MongoConnection.setGroup(uuid, group);
+    public static boolean setGroup(UUID uuid, Group group) {
+        if (group == null) {
+            return false;
+        }
+        GROUPS_BY_PLAYER.put(uuid, group);
+        MongoConnection.setGroup(uuid, group.getName());
+        return true;
     }
 
     /**
@@ -110,7 +99,6 @@ public class MongoPermsAPI {
      * Do not use this unless you know what you're doing
      */
     public static void clear() {
-        PERMISSIONS_BY_GROUP.clear();
         GROUPS_BY_PLAYER.clear();
     }
 
@@ -121,6 +109,7 @@ public class MongoPermsAPI {
      */
     public static void clear(UUID uuid) {
         GROUPS_BY_PLAYER.remove(uuid);
+        GROUPS_BY_PLAYER.put(uuid, getGroup(uuid));
     }
 
 }

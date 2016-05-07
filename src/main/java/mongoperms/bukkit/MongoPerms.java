@@ -1,9 +1,10 @@
 package mongoperms.bukkit;
 
-import com.google.common.collect.Lists;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import mongoperms.Group;
 import mongoperms.MongoConnection;
 import mongoperms.bukkit.command.Command;
 import mongoperms.bukkit.command.ReloadCommand;
@@ -23,7 +24,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,7 +38,6 @@ public class MongoPerms extends JavaPlugin {
     private static Configuration settings;
 
     public static final Map<UUID, PermissionAttachment> attachments = Maps.newLinkedHashMap();
-    public static final Map<String, List<String>> groups = Maps.newLinkedHashMap();
 
     private static Field field;
 
@@ -60,7 +59,7 @@ public class MongoPerms extends JavaPlugin {
         }
 
         settings = Configuration.load(this);
-        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false);
+        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false, settings.isUseAuthentication());
 
         if (settings.isUseVault()) {
             Plugin vault = Bukkit.getPluginManager().getPlugin("Vault");
@@ -71,15 +70,6 @@ public class MongoPerms extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new MongoListener(), this);
         registerCommand(new ReloadCommand());
-
-        MongoConnection.getGroups().forEach(group -> {
-            List<String> permissions = MongoConnection.getPermissions(group);
-            if (permissions != null) {
-                groups.put(group, permissions);
-            } else {
-                groups.put(group, Lists.newArrayList());
-            }
-        });
 
         System.out.println("[MongoPerms] Enabled version: " + getDescription().getVersion());
 
@@ -93,27 +83,28 @@ public class MongoPerms extends JavaPlugin {
 
         try {
             field.set(p, new CustomPermissibleBase(p));
-        } catch (ReflectiveOperationException e1) {
-            e1.printStackTrace();
+        } catch (ReflectiveOperationException | NullPointerException e) {
+            e.printStackTrace();
         }
 
         PermissionAttachment attachment = p.addAttachment(instance);
 
-        String group = MongoConnection.getGroup(getUUID(p.getName()));
+        String name = MongoConnection.getGroup(getUUID(p.getName()));
 
-        if (group == null) {
-            group = getSettings().getDefaultGroup();
+        if (name == null) {
+            name = getSettings().getDefaultGroup();
         }
 
-        if (groups.containsKey(group)) {
-            groups.get(group).forEach(s -> {
-                if (s.startsWith("-")) {
-                    attachment.setPermission(s.substring(1), false);
-                } else {
-                    attachment.setPermission(s, true);
-                }
-            });
-        }
+        Group group = Group.getGroup(name);
+        Preconditions.checkNotNull(group);
+
+        group.getPermissions().forEach(permission -> {
+            if (permission.startsWith("-")) {
+                attachment.setPermission(permission.substring(1), false);
+            } else {
+                attachment.setPermission(permission, true);
+            }
+        });
 
         attachments.put(getUUID(p.getName()), attachment);
     }
@@ -138,12 +129,9 @@ public class MongoPerms extends JavaPlugin {
         doing some experimenting below :D
      */
     private void registerCommand(CommandExecutor executor) {
+        Preconditions.checkNotNull(executor);
         Command command = executor.getClass().getAnnotation(Command.class);
-
-        if (command == null) {
-            System.err.println("Couldn't register " + executor.getClass().getSimpleName() + "! @Command not found.");
-            return;
-        }
+        Preconditions.checkNotNull(command, "Couldn't register " + executor.getClass().getSimpleName() + "! @Command not found.");
 
         CommandMap map = getCommandMap();
         PluginCommand cmd = newCommand(command.name(), this);
