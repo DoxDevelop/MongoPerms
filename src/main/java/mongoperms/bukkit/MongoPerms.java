@@ -37,15 +37,15 @@ public class MongoPerms extends JavaPlugin {
     @Getter
     private static Configuration settings;
 
-    public static final Map<UUID, PermissionAttachment> ATTACHMENTS = Maps.newLinkedHashMap();
+    public static final Map<UUID, PermissionAttachment> attachments = Maps.newLinkedHashMap();
 
-    private static Field permissibleField;
+    private static Field field;
 
     @Override
     public void onEnable() {
         try {
-            permissibleField = getCraftHumanEntityClass().getDeclaredField("perm");
-            permissibleField.setAccessible(true);
+            field = getCraftHumanEntityClass().getDeclaredField("perm");
+            field.setAccessible(true);
         } catch (ReflectiveOperationException e1) {
             System.out.println("[MongoPerms] Couldn't find CraftHumanEntityClass! Disabling plugin...");
             Bukkit.getPluginManager().disablePlugin(this);
@@ -59,7 +59,7 @@ public class MongoPerms extends JavaPlugin {
         }
 
         settings = Configuration.load(this);
-        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), settings.isUseAuthentication());
+        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false, settings.isUseAuthentication());
 
         if (settings.isUseVault()) {
             Plugin vault = Bukkit.getPluginManager().getPlugin("Vault");
@@ -82,7 +82,7 @@ public class MongoPerms extends JavaPlugin {
         }
 
         try {
-            permissibleField.set(p, new CustomPermissibleBase(p));
+            field.set(p, new CustomPermissibleBase(p));
         } catch (ReflectiveOperationException | NullPointerException e) {
             e.printStackTrace();
         }
@@ -106,7 +106,7 @@ public class MongoPerms extends JavaPlugin {
             }
         });
 
-        ATTACHMENTS.put(getUUID(p.getName()), attachment);
+        attachments.put(getUUID(p.getName()), attachment);
     }
 
     @SuppressWarnings("unchecked")
@@ -115,7 +115,7 @@ public class MongoPerms extends JavaPlugin {
     }
 
     public static void unlogAttachment(Player p) {
-        PermissionAttachment attachment = ATTACHMENTS.remove(getUUID(p.getName()));
+        PermissionAttachment attachment = attachments.remove(getUUID(p.getName()));
 
         if (attachment == null) {
             System.err.println("[MongoPerms]" + p.getName() + "'s attachment is null?");
@@ -167,20 +167,14 @@ public class MongoPerms extends JavaPlugin {
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    public <T> T newInstance(Class<? extends T> clazz, Object... args) {
+    public <T> T newInstance(Class<? extends T> clazz) {
         Constructor<T> constructor = (Constructor<T>) clazz.getConstructors()[0];
 
-        Class<?>[] parameters = constructor.getParameterTypes();
-
-        if (parameters.length == 0) {
+        if (constructor.getParameterTypes().length == 0) {
             return constructor.newInstance();
         } else {
-            if (Plugin.class.isAssignableFrom(parameters[0]) && parameters.length == 1) {
-                return constructor.newInstance(this);
-            }
+            return constructor.newInstance(this);
         }
-
-        throw new IllegalStateException();
     }
 
     @SneakyThrows

@@ -2,6 +2,7 @@ package mongoperms;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
@@ -24,8 +25,8 @@ public class MongoConnection {
     private static boolean initialized = false;
     private static String DEFAULT_GROUP;
 
-    public static void load(String host, int port, String defaultGroup, String username, String password, boolean useAuthentication) {
-        Preconditions.checkState(!initialized, "MongoConnection already initialized.");
+    public static void load(String host, int port, String defaultGroup, String username, String password, boolean isBungee, boolean useAuthentication) {
+        Preconditions.checkArgument(!initialized, "MongoConnection already initialized.");
 
         if (useAuthentication) {
             client = new MongoClient(new ServerAddress(host, port), Collections.singletonList(MongoCredential.createCredential(username, "admin", password.toCharArray())));
@@ -75,7 +76,7 @@ public class MongoConnection {
         }
 
         collection.insertOne(new Document("group", group)
-                .append("permissions", Lists.newArrayList())
+                .append("permissions", Sets.newHashSet())
                 .append("inherits", Lists.newArrayList())
         );
 
