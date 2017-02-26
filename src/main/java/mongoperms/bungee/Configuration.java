@@ -39,6 +39,8 @@ public class Configuration {
         config.mongoPassword = cfg.getString("password");
         config.useAuthentication = cfg.getBoolean("useAuthentication");
 
+        cfg.getSection("Gruppen_Rechte").getKeys();
+
         return config;
     }
 

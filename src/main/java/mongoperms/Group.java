@@ -1,5 +1,6 @@
 package mongoperms;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.mongodb.client.MongoCollection;
@@ -27,15 +28,21 @@ public class Group {
     private final List<String> inherits;
 
     public Collection<String> getPermissions() {
+        return getPermissions(true);
+    }
+
+    public Collection<String> getPermissions(boolean inherit) {
         Set<String> perms = Sets.newHashSet();
         Iterables.addAll(perms, permissions);
 
-        inherits.forEach(name -> {
-            Group group = getGroup(name);
-            if (group != null) {
-                Iterables.addAll(perms, group.permissions);
-            }
-        });
+        if (inherit) {
+            inherits.forEach(name -> {
+                Group group = getGroup(name);
+                if (group != null) {
+                    Iterables.addAll(perms, group.permissions);
+                }
+            });
+        }
 
         return Collections.unmodifiableCollection(perms);
     }
@@ -82,6 +89,7 @@ public class Group {
     }
 
     public static Group create(String name, List<String> permissions, List<String> inherits) {
+        Preconditions.checkArgument(getGroup(name) == null, "Group with name " + name + " already exists!");
         Group group = new Group(name, permissions, inherits);
         groups.add(group);
         return group;

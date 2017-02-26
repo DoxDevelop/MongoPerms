@@ -4,6 +4,7 @@ import mongoperms.MongoConnection;
 import mongoperms.MongoConnection.Result;
 import mongoperms.MongoPermsAPI;
 import mongoperms.Group;
+import mongoperms.bukkit.MongoPerms;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 public class VaultMongoBridge extends Permission {
 
     public VaultMongoBridge(Plugin vault, Plugin perms) {
-        System.out.printf("[%s][Permission] %s hooked.", vault.getDescription().getName(), "MongoPerms");
+        System.out.printf("[%s][Permission] %s hooked.", vault.getDescription().getName(), perms.getDescription().getName());
         Bukkit.getServicesManager().register(Permission.class, this, perms, ServicePriority.Highest);
     }
 
@@ -29,7 +30,7 @@ public class VaultMongoBridge extends Permission {
     @SuppressWarnings("deprecation")
     @Override
     public boolean isEnabled() {
-        return true;
+        return MongoPerms.getInstance().isEnabled();
     }
 
     @SuppressWarnings("deprecation")

@@ -59,7 +59,7 @@ public class MongoPerms extends JavaPlugin {
         }
 
         settings = Configuration.load(this);
-        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false, settings.isUseAuthentication());
+        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), settings.isUseAuthentication());
 
         if (settings.isUseVault()) {
             Plugin vault = Bukkit.getPluginManager().getPlugin("Vault");
@@ -167,14 +167,20 @@ public class MongoPerms extends JavaPlugin {
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    public <T> T newInstance(Class<? extends T> clazz) {
+    public <T> T newInstance(Class<? extends T> clazz, Object... args) {
         Constructor<T> constructor = (Constructor<T>) clazz.getConstructors()[0];
 
-        if (constructor.getParameterTypes().length == 0) {
+        Class<?>[] parameters = constructor.getParameterTypes();
+
+        if (parameters.length == 0) {
             return constructor.newInstance();
         } else {
-            return constructor.newInstance(this);
+            if (Plugin.class.isAssignableFrom(parameters[0]) && parameters.length == 1) {
+                return constructor.newInstance(this);
+            }
         }
+
+        throw new IllegalStateException();
     }
 
     @SneakyThrows

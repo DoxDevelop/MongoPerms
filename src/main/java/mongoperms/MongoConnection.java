@@ -24,8 +24,8 @@ public class MongoConnection {
     private static boolean initialized = false;
     private static String DEFAULT_GROUP;
 
-    public static void load(String host, int port, String defaultGroup, String username, String password, boolean isBungee, boolean useAuthentication) {
-        Preconditions.checkArgument(!initialized, "MongoConnection already initialized.");
+    public static void load(String host, int port, String defaultGroup, String username, String password, boolean useAuthentication) {
+        Preconditions.checkState(!initialized, "MongoConnection already initialized.");
 
         if (useAuthentication) {
             client = new MongoClient(new ServerAddress(host, port), Collections.singletonList(MongoCredential.createCredential(username, "admin", password.toCharArray())));
