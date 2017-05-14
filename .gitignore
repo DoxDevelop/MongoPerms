@@ -1,0 +1,6 @@
+# Created by .ignore support plugin (hsz.mobi)
+dependency-reduced-pom.xml
+.idea/
+src/test/
+target
+MongoPerms.iml

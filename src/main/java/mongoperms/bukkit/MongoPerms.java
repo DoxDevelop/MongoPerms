@@ -37,15 +37,15 @@ public class MongoPerms extends JavaPlugin {
     @Getter
     private static Configuration settings;
 
-    public static final Map<UUID, PermissionAttachment> attachments = Maps.newLinkedHashMap();
+    public static final Map<UUID, PermissionAttachment> ATTACHMENTS = Maps.newLinkedHashMap();
 
-    private static Field field;
+    private static Field permissibleField;
 
     @Override
     public void onEnable() {
         try {
-            field = getCraftHumanEntityClass().getDeclaredField("perm");
-            field.setAccessible(true);
+            permissibleField = getCraftHumanEntityClass().getDeclaredField("perm");
+            permissibleField.setAccessible(true);
         } catch (ReflectiveOperationException e1) {
             System.out.println("[MongoPerms] Couldn't find CraftHumanEntityClass! Disabling plugin...");
             Bukkit.getPluginManager().disablePlugin(this);
@@ -82,7 +82,7 @@ public class MongoPerms extends JavaPlugin {
         }
 
         try {
-            field.set(p, new CustomPermissibleBase(p));
+            permissibleField.set(p, new CustomPermissibleBase(p));
         } catch (ReflectiveOperationException | NullPointerException e) {
             e.printStackTrace();
         }
@@ -106,7 +106,7 @@ public class MongoPerms extends JavaPlugin {
             }
         });
 
-        attachments.put(getUUID(p.getName()), attachment);
+        ATTACHMENTS.put(getUUID(p.getName()), attachment);
     }
 
     @SuppressWarnings("unchecked")
@@ -115,7 +115,7 @@ public class MongoPerms extends JavaPlugin {
     }
 
     public static void unlogAttachment(Player p) {
-        PermissionAttachment attachment = attachments.remove(getUUID(p.getName()));
+        PermissionAttachment attachment = ATTACHMENTS.remove(getUUID(p.getName()));
 
         if (attachment == null) {
             System.err.println("[MongoPerms]" + p.getName() + "'s attachment is null?");

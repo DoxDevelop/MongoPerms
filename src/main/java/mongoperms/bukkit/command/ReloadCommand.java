@@ -49,7 +49,7 @@ public class ReloadCommand implements CommandExecutor {
         Bukkit.getPluginManager().callEvent(new PermissionUpdatedEvent(true));
 
         Bukkit.getOnlinePlayers().forEach(MongoPerms::generateAttachment);
-        sender.sendMessage("§a" + MongoPerms.attachments.size() + " players registered.");
+        sender.sendMessage("§a" + MongoPerms.ATTACHMENTS.size() + " players registered.");
         return false;
     }
 
