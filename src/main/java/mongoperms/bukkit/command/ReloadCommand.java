@@ -46,10 +46,10 @@ public class ReloadCommand implements CommandExecutor {
 
         sender.sendMessage("§a" + Group.getGroups().size() + " groups loaded.");
         MongoPermsAPI.clear();
-        Bukkit.getPluginManager().callEvent(new PermissionUpdatedEvent(true));
+        Bukkit.getPluginManager().callEvent(new PermissionUpdatedEvent());
 
         Bukkit.getOnlinePlayers().forEach(MongoPerms::generateAttachment);
-        sender.sendMessage("§a" + MongoPerms.ATTACHMENTS.size() + " players registered.");
+        sender.sendMessage("§a" + MongoPerms.attachments.size() + " players registered.");
         return false;
     }
 

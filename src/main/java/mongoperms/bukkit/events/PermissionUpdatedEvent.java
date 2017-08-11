@@ -10,6 +10,13 @@ public class PermissionUpdatedEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
 
+    /**
+     * Default constructor for successful update
+     */
+    public PermissionUpdatedEvent() {
+        this(true);
+    }
+
     @Getter
     private final boolean success;
 

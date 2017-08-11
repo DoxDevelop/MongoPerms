@@ -71,7 +71,7 @@ public class MongoConnection {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
         if (collection.find(eq("group", group)).first() != null) {
-            return Result.RESULT_GROUP_EXISTS;
+            return Result.GROUP_ALREADY_EXISTS;
         }
 
         collection.insertOne(new Document("group", group)
@@ -80,7 +80,7 @@ public class MongoConnection {
         );
 
         Group.create(group, Lists.newArrayList(), Lists.newArrayList());
-        return Result.RESULT_SUCCESS;
+        return Result.SUCCESS;
     }
 
     @SuppressWarnings("unchecked")
@@ -115,7 +115,7 @@ public class MongoConnection {
         Document old = collection.find(eq("group", group)).first();
 
         if (old == null) {
-            return Result.RESULT_UNKNOWN_GROUP;
+            return Result.UNKNOWN_GROUP;
         }
 
         Group.getGroup(group).addPermission(permission);
@@ -123,7 +123,7 @@ public class MongoConnection {
         List<String> perms = (List<String>) old.get("permissions");
         perms.add(permission);
         collection.replaceOne(eq("group", group), new Document("group", group).append("permissions", perms).append("inherits", old.get("inherits")));
-        return Result.RESULT_SUCCESS;
+        return Result.SUCCESS;
     }
 
     @SuppressWarnings("unchecked")
@@ -133,7 +133,7 @@ public class MongoConnection {
         Document old = collection.find(eq("group", group)).first();
 
         if (old == null) {
-            return Result.RESULT_UNKNOWN_GROUP;
+            return Result.UNKNOWN_GROUP;
         }
 
         List<String> perms = (List<String>) old.get("permissions");
@@ -141,9 +141,9 @@ public class MongoConnection {
             Group.getGroup(group).removePermission(permission);
             perms.remove(permission);
             collection.replaceOne(eq("group", group), new Document("group", group).append("permissions", perms).append("inherits", old.get("inherits")));
-            return Result.RESULT_SUCCESS;
+            return Result.SUCCESS;
         }
-        return Result.RESULT_UNKNOWN_PERMISSION;
+        return Result.UNKNOWN_PERMISSION;
     }
 
     public static Result setPermissions(String group, Set<String> permissions) {
@@ -152,22 +152,22 @@ public class MongoConnection {
         Document old = collection.find(eq("group", group)).first();
 
         if (old == null) {
-            return Result.RESULT_UNKNOWN_ERROR;
+            return Result.UNKNOWN_ERROR;
         }
 
         Group.getGroup(group).setPermissions(permissions);
 
         old.put("permissions", permissions);
         collection.replaceOne(eq("group", group), old);
-        return Result.RESULT_SUCCESS;
+        return Result.SUCCESS;
     }
 
     public enum Result {
-        RESULT_SUCCESS,
-        RESULT_UNKNOWN_GROUP,
-        RESULT_UNKNOWN_PERMISSION,
-        RESULT_GROUP_EXISTS,
-        RESULT_UNKNOWN_ERROR
+        SUCCESS,
+        UNKNOWN_GROUP,
+        UNKNOWN_PERMISSION,
+        GROUP_ALREADY_EXISTS,
+        UNKNOWN_ERROR
     }
 
 }

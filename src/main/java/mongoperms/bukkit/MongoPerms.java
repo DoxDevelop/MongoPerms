@@ -4,9 +4,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import mongoperms.Configuration;
 import mongoperms.Group;
 import mongoperms.MongoConnection;
 import mongoperms.bukkit.command.Command;
+import mongoperms.bukkit.command.CommandRegistrar;
 import mongoperms.bukkit.command.ReloadCommand;
 import mongoperms.bukkit.vault.VaultMongoBridge;
 import org.bukkit.Bukkit;
@@ -20,6 +22,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -58,7 +61,12 @@ public class MongoPerms extends JavaPlugin {
             saveDefaultConfig();
         }
 
-        settings = Configuration.load(this);
+        try {
+            settings = Configuration.load();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
         MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false, settings.isUseAuthentication());
 
         if (settings.isUseVault()) {
@@ -69,7 +77,8 @@ public class MongoPerms extends JavaPlugin {
         }
 
         getServer().getPluginManager().registerEvents(new MongoListener(), this);
-        registerCommand(new ReloadCommand());
+        CommandRegistrar registrar = new CommandRegistrar(this);
+        registrar.registerCommand(new ReloadCommand());
 
         System.out.println("[MongoPerms] Enabled version: " + getDescription().getVersion());
 
@@ -123,65 +132,6 @@ public class MongoPerms extends JavaPlugin {
         }
 
         p.removeAttachment(attachment);
-    }
-
-    /*
-        doing some experimenting below :D
-     */
-    private void registerCommand(CommandExecutor executor) {
-        Preconditions.checkNotNull(executor);
-        Command command = executor.getClass().getAnnotation(Command.class);
-        Preconditions.checkNotNull(command, "Couldn't register " + executor.getClass().getSimpleName() + "! @Command not found.");
-
-        CommandMap map = getCommandMap();
-        PluginCommand cmd = newCommand(command.name(), this);
-        cmd.setDescription(command.description());
-        cmd.setExecutor(executor);
-        cmd.setTabCompleter(newInstance(command.tabCompleter()));
-
-        if (!command.permission().equals("")) {
-            cmd.setPermission(command.permission());
-            if (!command.permissionMessage().equals("")) {
-                cmd.setPermissionMessage(command.permissionMessage());
-            }
-        }
-
-        if (!command.usage().equals("")) {
-            cmd.setUsage(command.usage());
-        }
-
-        if (command.aliases().length != 0) {
-            cmd.setAliases(Arrays.asList(command.aliases()));
-        }
-
-        map.register(getClass().getSimpleName().toLowerCase(), cmd);
-        System.out.printf("[MongoPerms] Registered command %s", command.name());
-    }
-
-    @SneakyThrows
-    private PluginCommand newCommand(String name, Plugin owner) {
-        Constructor<? extends org.bukkit.command.Command> constructor = PluginCommand.class.getDeclaredConstructor(String.class, Plugin.class);
-        constructor.setAccessible(true);
-        return (PluginCommand) constructor.newInstance(name, owner);
-    }
-
-    @SneakyThrows
-    @SuppressWarnings("unchecked")
-    public <T> T newInstance(Class<? extends T> clazz) {
-        Constructor<T> constructor = (Constructor<T>) clazz.getConstructors()[0];
-
-        if (constructor.getParameterTypes().length == 0) {
-            return constructor.newInstance();
-        } else {
-            return constructor.newInstance(this);
-        }
-    }
-
-    @SneakyThrows
-    private CommandMap getCommandMap() {
-        Field f = Bukkit.getServer().getClass().getDeclaredField("commandMap");
-        f.setAccessible(true);
-        return (CommandMap) f.get(Bukkit.getServer());
     }
 
 

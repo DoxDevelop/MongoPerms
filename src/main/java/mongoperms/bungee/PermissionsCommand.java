@@ -47,10 +47,10 @@ public class PermissionsCommand extends Command {
                 String group = args[1];
                 Result result = MongoConnection.addGroup(group);
                 switch (result) {
-                    case RESULT_SUCCESS:
+                    case SUCCESS:
                         sender.sendMessage(new TextComponent("§aGroup " + group + " has been created."));
                         break;
-                    case RESULT_GROUP_EXISTS:
+                    case GROUP_ALREADY_EXISTS:
                         sender.sendMessage(new TextComponent("§cGroup " + group + " already exists."));
                 }
 
@@ -100,7 +100,12 @@ public class PermissionsCommand extends Command {
                 }
 
                 if (group.getInherits().size() > 0) {
-                    sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" inherits permissions from groups: ").color(ChatColor.YELLOW).append(Joiner.on(", ").join(group.getInherits())).create());
+                    sender.sendMessage(
+                            new ComponentBuilder("Group \"" + group.getName() + "\" inherits permissions from groups: ")
+                                    .color(ChatColor.YELLOW)
+                                    .append(Joiner.on(", ").join(group.getInherits()))
+                                    .create()
+                    );
                 }
                 sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" has the following permissions:").color(ChatColor.YELLOW).create());
                 group.getPermissions().forEach(s -> sender.sendMessage(new TextComponent(" §e- " + s)));
@@ -147,10 +152,10 @@ public class PermissionsCommand extends Command {
                 String permission = args[2];
                 Result result = MongoConnection.addPermission(group, permission);
                 switch (result) {
-                    case RESULT_SUCCESS:
+                    case SUCCESS:
                         sender.sendMessage(new ComponentBuilder("Permission \"" + permission + "\" has been added to " + group + ".").color(ChatColor.GREEN).create());
                         break;
-                    case RESULT_UNKNOWN_GROUP:
+                    case UNKNOWN_GROUP:
                         sender.sendMessage(new TextComponent("§cCan't find group: " + group));
                         break;
                 }
@@ -215,13 +220,13 @@ public class PermissionsCommand extends Command {
                 Result result = MongoConnection.removePermission(group, permission);
 
                 switch (result) {
-                    case RESULT_SUCCESS:
+                    case SUCCESS:
                         sender.sendMessage(new ComponentBuilder("Permission \"" + permission + "\" has been removed from " + group + ".").color(ChatColor.GREEN).create());
                         break;
-                    case RESULT_UNKNOWN_GROUP:
+                    case UNKNOWN_GROUP:
                         sender.sendMessage(new TextComponent("§cCan't find group: " + group));
                         break;
-                    case RESULT_UNKNOWN_PERMISSION:
+                    case UNKNOWN_PERMISSION:
                         sender.sendMessage(new ComponentBuilder("Group \"" + group + "\" doesn't have the permission \"" + permission + "\".").color(ChatColor.RED).create());
                         break;
                 }

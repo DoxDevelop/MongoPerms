@@ -25,19 +25,10 @@ public class Group {
     private final String name;
     private final List<String> permissions;
     private final List<String> inherits;
+    private final Set<String> permissionsWithInheritances = Sets.newHashSet();
 
     public Collection<String> getPermissions() {
-        Set<String> perms = Sets.newHashSet();
-        Iterables.addAll(perms, permissions);
-
-        inherits.forEach(name -> {
-            Group group = getGroup(name);
-            if (group != null) {
-                Iterables.addAll(perms, group.permissions);
-            }
-        });
-
-        return Collections.unmodifiableCollection(perms);
+        return Collections.unmodifiableCollection(permissionsWithInheritances);
     }
 
     public void addPermission(String node) {
@@ -75,6 +66,18 @@ public class Group {
         Document doc = collection.find(eq("group", name)).first();
         doc.put("inherits", inherits);
         collection.replaceOne(eq("group", name), doc);
+    }
+
+    private void reloadInheritances() {
+        permissionsWithInheritances.clear();
+        Iterables.addAll(permissionsWithInheritances, permissions);
+
+        inherits.forEach(name -> {
+            Group group = getGroup(name);
+            if (group != null) {
+                Iterables.addAll(permissionsWithInheritances, group.permissions);
+            }
+        });
     }
 
     public boolean hasPermission(String node) {

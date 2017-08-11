@@ -1,6 +1,7 @@
 package mongoperms.bungee;
 
 import lombok.Getter;
+import mongoperms.Configuration;
 import mongoperms.Group;
 import mongoperms.MongoConnection;
 import mongoperms.MongoPermsAPI;
@@ -10,7 +11,6 @@ import net.md_5.bungee.api.event.PermissionCheckEvent;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.command.ConsoleCommandSender;
 import net.md_5.bungee.event.EventHandler;
 
 import java.io.File;
@@ -32,7 +32,11 @@ public class MongoPermsBungee extends Plugin implements Listener {
 
         saveDefaultConfigIfNotExists();
 
-        settings = Configuration.load(this);
+        try {
+            settings = Configuration.load();
+        } catch (IOException e) {
+            throw new RuntimeException();
+        }
 
         getProxy().getScheduler().runAsync(this, () -> MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), true, settings.isUseAuthentication())); //Need to run async because of BungeeCord Security Manager
 
@@ -55,9 +59,7 @@ public class MongoPermsBungee extends Plugin implements Listener {
     @EventHandler
     public void onPermissionCheck(PermissionCheckEvent e) {
         CommandSender sender = e.getSender();
-        if (sender instanceof ConsoleCommandSender) {
-            e.setHasPermission(true);
-        } else {
+        if (sender instanceof ProxiedPlayer) {
             ProxiedPlayer p = (ProxiedPlayer) e.getSender();
 
             Collection<String> permissions = MongoPermsAPI.getGroup(p.getUniqueId()).getPermissions();
@@ -65,6 +67,8 @@ public class MongoPermsBungee extends Plugin implements Listener {
             if (permissions.contains(settings.getPermissionNode()) || permissions.contains(e.getPermission())) {
                 e.setHasPermission(true);
             }
+        } else {
+            e.setHasPermission(true);
         }
     }
 

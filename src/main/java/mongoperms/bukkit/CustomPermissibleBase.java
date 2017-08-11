@@ -12,7 +12,6 @@ public class CustomPermissibleBase extends PermissibleBase {
 
     @Override
     public boolean hasPermission(String inName) {
-
         if (MongoPerms.getSettings().getPermissionNode().equals("none")) {
             return super.hasPermission(inName);
         }
@@ -22,7 +21,6 @@ public class CustomPermissibleBase extends PermissibleBase {
 
     @Override
     public boolean hasPermission(Permission perm) {
-
         if (MongoPerms.getSettings().getPermissionNode().equals("none")) {
             return super.hasPermission(perm);
         }
