@@ -53,6 +53,8 @@ public class Group {
     public void addInheritance(Group group) {
         this.inherits.add(group.getName());
 
+        reloadInheritances();
+
         MongoCollection<Document> collection = MongoConnection.getCollection("perms", "groups");
         Document doc = collection.find(eq("group", name)).first();
         doc.put("inherits", inherits);
@@ -61,6 +63,8 @@ public class Group {
 
     public void removeInheritance(Group group) {
         inherits.remove(group.getName());
+
+        reloadInheritances();
 
         MongoCollection<Document> collection = MongoConnection.getCollection("perms", "groups");
         Document doc = collection.find(eq("group", name)).first();
@@ -84,10 +88,9 @@ public class Group {
         return permissions.contains(node);
     }
 
-    public static Group create(String name, List<String> permissions, List<String> inherits) {
+    public static void create(String name, List<String> permissions, List<String> inherits) {
         Group group = new Group(name, permissions, inherits);
         groups.add(group);
-        return group;
     }
 
     public static Group getGroup(String name) {
