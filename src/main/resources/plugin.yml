@@ -1,5 +1,5 @@
 name: MongoPerms
-version: 1.4
+version: 1.5
 main: mongoperms.bukkit.MongoPerms
 authors: [1byte]
 softdepend: [Vault]
