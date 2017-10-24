@@ -196,7 +196,7 @@ public class MongoPermsAPI {
      */
     public static void clear(UUID uuid) {
         GROUPS_BY_PLAYER.remove(uuid);
-        GROUPS_BY_PLAYER.put(uuid, getGroup(uuid));
+        getGroupOfPlayer(uuid).ifPresent(group -> GROUPS_BY_PLAYER.put(uuid, group));
     }
 
 }
