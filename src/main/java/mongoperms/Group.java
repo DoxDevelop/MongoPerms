@@ -8,10 +8,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -76,12 +73,7 @@ public class Group {
         permissionsWithInheritances.clear();
         Iterables.addAll(permissionsWithInheritances, permissions);
 
-        inherits.forEach(name -> {
-            Group group = getGroup(name);
-            if (group != null) {
-                Iterables.addAll(permissionsWithInheritances, group.permissions);
-            }
-        });
+        inherits.forEach(name -> getGroup(name).ifPresent(group -> Iterables.addAll(permissionsWithInheritances, group.permissions)));
     }
 
     public boolean hasPermission(String node) {
@@ -93,19 +85,14 @@ public class Group {
         groups.add(group);
     }
 
-    public static Group getGroup(String name) {
-        for (Group group : groups) {
-            if (group.getName().equalsIgnoreCase(name)) {
-                return group;
-            }
-        }
-        return null;
+    public static Optional<Group> getGroup(String name) {
+        return groups.stream().filter(group -> group.getName().equalsIgnoreCase(name)).findAny();
     }
 
     public static boolean removeGroup(String name) {
-        Group group = getGroup(name);
-        if (name != null) {
-            groups.remove(group);
+        Optional<Group> group = getGroup(name);
+        if (group.isPresent()) {
+            groups.remove(group.get());
             return true;
         }
         return false;

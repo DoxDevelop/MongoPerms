@@ -10,9 +10,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -27,7 +25,7 @@ public class MongoPermsAPI {
     /**
      * Get a Collection of all permissions by the player
      * <br>
-     * NOTE: Due to Bungee/Bukkit compability, the player can be only provided by the UUID!
+     * <strong>NOTE</strong>: Due to Bungee/Bukkit compability, the player can be only provided by the UUID!
      * <br>
      * To get the real (not offline-) UUID of a player, use {@link MongoPermsAPI#getUUID(String)}
      *
@@ -35,18 +33,20 @@ public class MongoPermsAPI {
      * @return collection with permissions or null if group not found
      */
     public static Collection<String> getPermissionsOfPlayer(UUID uuid) {
-        return getGroup(uuid).getPermissions();
+        Optional<Group> groupOfPlayer = getGroupOfPlayer(uuid);
+        return groupOfPlayer.isPresent() ? groupOfPlayer.get().getPermissionsWithInheritances() : Collections.emptySet();
     }
 
 
     /**
      * Get permissions of specified group
      *
-     * @param group the group to get the permissions from
+     * @param groupName the group to get the permissions from
      * @return collection with all permissions
      */
-    public static Collection<String> getPermissions(String group) {
-        return Group.getGroup(group).getPermissions();
+    public static Collection<String> getPermissions(String groupName) {
+        Optional<Group> group = Group.getGroup(groupName);
+        return group.isPresent() ? group.get().getPermissionsWithInheritances() : Collections.emptySet();
     }
 
     /**
@@ -60,13 +60,36 @@ public class MongoPermsAPI {
      * @param uuid uuid of a player
      * @return group of specified player
      */
+    public static Optional<Group> getGroupOfPlayer(UUID uuid) {
+        if (GROUPS_BY_PLAYER.containsKey(uuid)) {
+            return Optional.of(GROUPS_BY_PLAYER.get(uuid));
+        } else {
+            Optional<Group> group = Group.getGroup(MongoConnection.getGroup(uuid));
+            group.ifPresent(g -> GROUPS_BY_PLAYER.put(uuid, g));
+            return group;
+        }
+    }
+
+    /**
+     * Get group of specified player
+     * <br><br>
+     * Default group is <i>"default"</i>
+     * <br><br>
+     * <strong>NOTE</strong> this is not ran asynchronously
+     * <br>
+     *
+     * @param uuid uuid of a player
+     * @return group of specified player
+     * @deprecated use getGroupOfPlayer(UUID) instead
+     */
+    @Deprecated
     public static Group getGroup(UUID uuid) {
         if (GROUPS_BY_PLAYER.containsKey(uuid)) {
             return GROUPS_BY_PLAYER.get(uuid);
         } else {
-            Group group = Group.getGroup(MongoConnection.getGroup(uuid));
-            GROUPS_BY_PLAYER.put(uuid, group);
-            return group;
+            Optional<Group> group = Group.getGroup(MongoConnection.getGroup(uuid));
+            group.ifPresent(g -> GROUPS_BY_PLAYER.put(uuid, g));
+            return group.orElse(null);
         }
     }
 
@@ -76,9 +99,22 @@ public class MongoPermsAPI {
      * @param uuid     of a player
      * @param consumer consumer accepting the group of the player
      * @see MongoPermsAPI#getGroup(UUID)
+     * @deprecated use getGroupOfPlayer(UUID, Consumer) instead
      */
+    @Deprecated
     public static void getGroup(UUID uuid, Consumer<Group> consumer) {
         EXECUTOR.execute(() -> consumer.accept(getGroup(uuid)));
+    }
+
+    /**
+     * Get group of specified player asynchronously
+     *
+     * @param uuid     of a player
+     * @param consumer consumer accepting the group of the player
+     * @see MongoPermsAPI#getGroupOfPlayer(UUID, Consumer)
+     */
+    public static void getGroupOfPlayer(UUID uuid, Consumer<Optional<Group>> consumer) {
+        EXECUTOR.execute(() -> consumer.accept(getGroupOfPlayer(uuid)));
     }
 
     /**

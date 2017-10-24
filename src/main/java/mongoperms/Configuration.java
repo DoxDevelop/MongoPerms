@@ -46,7 +46,6 @@ public class Configuration {
         config.mongoHost = map.get("host");
         config.mongoPort = map.get("port");
         config.useVault = map.get("use-vault");
-        config.useVault = map.get("use-vault");
         config.mongoUsername = map.get("username");
         config.mongoPassword = map.get("password");
         config.useAuthentication = map.get("useAuthentication");

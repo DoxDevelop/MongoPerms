@@ -109,28 +109,28 @@ public class MongoConnection {
     }
 
     @SuppressWarnings("unchecked")
-    public static Result addPermission(String group, String permission) {
+    public static Result addPermission(String groupName, String permission) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
-        Document old = collection.find(eq("group", group)).first();
+        Document old = collection.find(eq("group", groupName)).first();
 
         if (old == null) {
             return Result.UNKNOWN_GROUP;
         }
 
-        Group.getGroup(group).addPermission(permission);
+        Group.getGroup(groupName).ifPresent(group -> group.addPermission(permission));
 
         List<String> perms = (List<String>) old.get("permissions");
         perms.add(permission);
-        collection.replaceOne(eq("group", group), new Document("group", group).append("permissions", perms).append("inherits", old.get("inherits")));
+        collection.replaceOne(eq("group", groupName), new Document("group", groupName).append("permissions", perms).append("inherits", old.get("inherits")));
         return Result.SUCCESS;
     }
 
     @SuppressWarnings("unchecked")
-    public static Result removePermission(String group, String permission) {
+    public static Result removePermission(String groupName, String permission) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
-        Document old = collection.find(eq("group", group)).first();
+        Document old = collection.find(eq("group", groupName)).first();
 
         if (old == null) {
             return Result.UNKNOWN_GROUP;
@@ -138,27 +138,27 @@ public class MongoConnection {
 
         List<String> perms = (List<String>) old.get("permissions");
         if (perms.contains(permission)) {
-            Group.getGroup(group).removePermission(permission);
+            Group.getGroup(groupName).ifPresent(group -> group.removePermission(permission));
             perms.remove(permission);
-            collection.replaceOne(eq("group", group), new Document("group", group).append("permissions", perms).append("inherits", old.get("inherits")));
+            collection.replaceOne(eq("group", groupName), new Document("group", groupName).append("permissions", perms).append("inherits", old.get("inherits")));
             return Result.SUCCESS;
         }
         return Result.UNKNOWN_PERMISSION;
     }
 
-    public static Result setPermissions(String group, Set<String> permissions) {
+    public static Result setPermissions(String groupName, Set<String> permissions) {
         MongoCollection<Document> collection = getCollection("perms", "groups");
 
-        Document old = collection.find(eq("group", group)).first();
+        Document old = collection.find(eq("group", groupName)).first();
 
         if (old == null) {
             return Result.UNKNOWN_ERROR;
         }
 
-        Group.getGroup(group).setPermissions(permissions);
+        Group.getGroup(groupName).ifPresent(group -> group.setPermissions(permissions));
 
         old.put("permissions", permissions);
-        collection.replaceOne(eq("group", group), old);
+        collection.replaceOne(eq("group", groupName), old);
         return Result.SUCCESS;
     }
 
