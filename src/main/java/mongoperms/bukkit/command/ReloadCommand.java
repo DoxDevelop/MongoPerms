@@ -30,11 +30,13 @@ public class ReloadCommand implements CommandExecutor {
 
         if (args.length > 0) {
             Player p = Bukkit.getPlayer(args[0]);
+
             if (p == null || !p.isOnline()) {
                 sender.sendMessage("§cCan't find player: " + args[0]);
                 return true;
             }
-            MongoPerms.unlogAttachment(p);
+
+            MongoPerms.unLogAttachment(p);
             MongoPerms.generateAttachment(p);
             MongoPermsAPI.clear(getUUID(p.getName()));
             Bukkit.getPluginManager().callEvent(new PlayerPermissionUpdatedEvent(p));
@@ -42,7 +44,7 @@ public class ReloadCommand implements CommandExecutor {
             return true;
         }
 
-        Bukkit.getOnlinePlayers().forEach(MongoPerms::unlogAttachment);
+        Bukkit.getOnlinePlayers().forEach(MongoPerms::unLogAttachment);
 
         sender.sendMessage("§a" + Group.getGroups().size() + " groups loaded.");
         MongoPermsAPI.clear();

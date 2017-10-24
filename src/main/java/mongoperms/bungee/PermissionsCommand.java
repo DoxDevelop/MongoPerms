@@ -15,6 +15,7 @@ import net.md_5.bungee.api.plugin.Command;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -73,7 +74,7 @@ public class PermissionsCommand extends Command {
                     ProxiedPlayer p = ProxyServer.getInstance().getPlayer(args[1]);
                     UUID uuid = p == null ? getUUID(args[1]) : p.getUniqueId();
                     String group = args[2];
-                    if (MongoPermsAPI.setGroup(uuid, Group.getGroup(group))) {
+                    if (MongoPermsAPI.setGroup(uuid, Group.getGroup(group).orElse(null))) { //null groups are handled by API
                         sender.sendMessage(new TextComponent("§aUser " + (p == null ? args[0] : p.getName()) + " is now a \"" + group + "\""));
                     } else {
                         sender.sendMessage(new TextComponent("§cCan't find group \"" + group + "\"!"));
@@ -87,12 +88,14 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                Group group = Group.getGroup(args[1]);
+                Optional<Group> foundGroup = Group.getGroup(args[1]);
 
-                if (group == null) {
+                if (!foundGroup.isPresent()) {
                     sender.sendMessage(new TextComponent("§cCan't find group \"" + args[1] + "\"!"));
                     return;
                 }
+
+                Group group = foundGroup.get();
 
                 if (group.getPermissions().size() == 0) {
                     sender.sendMessage(new TextComponent("§cNo permissions found for group \"" + group + "\"."));
@@ -168,21 +171,21 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                Group group = Group.getGroup(args[1]);
-                Group inherits = Group.getGroup(args[2]);
+                Optional<Group> group = Group.getGroup(args[1]);
+                Optional<Group> inherits = Group.getGroup(args[2]);
 
-                if (group == null) {
+                if (!group.isPresent()) {
                     sender.sendMessage(new TextComponent("§cGroup " + group + " doens't exist!"));
                     return;
                 }
-                if (inherits == null) {
+                if (!inherits.isPresent()) {
                     sender.sendMessage(new TextComponent("§cGroup " + inherits + " doens't exist!"));
                     return;
                 }
 
-                group.addInheritance(inherits);
+                group.get().addInheritance(inherits.get());
 
-                sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" now inherits group \"" + inherits.getName() + "\".").color(ChatColor.GREEN).create());
+                sender.sendMessage(new ComponentBuilder("Group \"" + group.get().getName() + "\" now inherits group \"" + inherits.get().getName() + "\".").color(ChatColor.GREEN).create());
 
             } else if (subCommand.equalsIgnoreCase("removeinheritance")) {
 
@@ -192,21 +195,21 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                Group group = Group.getGroup(args[1]);
-                Group inherits = Group.getGroup(args[2]);
+                Optional<Group> group = Group.getGroup(args[1]);
+                Optional<Group> inherits = Group.getGroup(args[2]);
 
-                if (group == null) {
+                if (!group.isPresent()) {
                     sender.sendMessage(new TextComponent("§cGroup " + group + " doens't exist!"));
                     return;
                 }
-                if (inherits == null) {
+                if (!inherits.isPresent()) {
                     sender.sendMessage(new TextComponent("§cGroup " + inherits + " doens't exist!"));
                     return;
                 }
 
-                group.removeInheritance(inherits);
+                group.get().removeInheritance(inherits.get());
 
-                sender.sendMessage(new ComponentBuilder("Group \"" + group.getName() + "\" no longer inherits group \"" + inherits.getName() + "\".").color(ChatColor.GREEN).create());
+                sender.sendMessage(new ComponentBuilder("Group \"" + group.get().getName() + "\" no longer inherits group \"" + inherits.get().getName() + "\".").color(ChatColor.GREEN).create());
 
             } else if (subCommand.equalsIgnoreCase("remove")) {
 
@@ -250,27 +253,24 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                String fromGroup = args[1];
-                String toGroup = args[2];
+                Optional<Group> from = Group.getGroup(args[1]);
+                Optional<Group> to = Group.getGroup(args[2]);
 
-                if (Group.getGroup(fromGroup) == null) {
-                    sender.sendMessage(new TextComponent("§cCan't find group: " + fromGroup));
+                if (!from.isPresent()) {
+                    sender.sendMessage(new TextComponent("§cCan't find group: " + args[1]));
                     return;
-                } else if (Group.getGroup(toGroup) == null) {
-                    sender.sendMessage(new TextComponent("§cCan't find group: " + toGroup));
-                    return;
-                }
-
-                Group from = Group.getGroup(fromGroup);
-                Group to = Group.getGroup(toGroup);
-
-                if (from.getPermissions().size() == 0) {
-                    sender.sendMessage(new TextComponent("§cNo permissions found in group \"" + fromGroup + "\"."));
+                } else if (!to.isPresent()) {
+                    sender.sendMessage(new TextComponent("§cCan't find group: " + args[2]));
                     return;
                 }
 
-                to.addAll(from.getPermissions());
-                sender.sendMessage(new ComponentBuilder("Successfully added all permissions from group \"" + fromGroup + "\" to group \"" + toGroup + "\".").color(ChatColor.GREEN).create());
+                if (from.get().getPermissions().size() == 0) {
+                    sender.sendMessage(new TextComponent("§cNo permissions found in group \"" + args[1] + "\"."));
+                    return;
+                }
+
+                to.get().addAll(from.get().getPermissions());
+                sender.sendMessage(new ComponentBuilder("Successfully added all permissions from group \"" + args[1] + "\" to group \"" + args[2] + "\".").color(ChatColor.GREEN).create());
             } else if (subCommand.equalsIgnoreCase("putall")) {
 
                 if (args.length != 3) {
@@ -278,27 +278,24 @@ public class PermissionsCommand extends Command {
                     return;
                 }
 
-                String fromGroup = args[1];
-                String toGroup = args[2];
+                Optional<Group> from = Group.getGroup(args[1]);
+                Optional<Group> to = Group.getGroup(args[2]);
 
-                if (Group.getGroup(fromGroup) == null) {
-                    sender.sendMessage(new TextComponent("§cCan't find group: " + fromGroup));
+                if (!from.isPresent()) {
+                    sender.sendMessage(new TextComponent("§cCan't find group: " + args[1]));
                     return;
-                } else if (Group.getGroup(toGroup) == null) {
-                    sender.sendMessage(new TextComponent("§cCan't find group: " + toGroup));
-                    return;
-                }
-
-                Group from = Group.getGroup(fromGroup);
-                Group to = Group.getGroup(toGroup);
-
-                if (from.getPermissions().size() == 0) {
-                    sender.sendMessage(new TextComponent("§cNo permissions found in group \"" + fromGroup + "\"."));
+                } else if (!to.isPresent()) {
+                    sender.sendMessage(new TextComponent("§cCan't find group: " + args[2]));
                     return;
                 }
 
-                to.setPermissions(from.getPermissions());
-                sender.sendMessage(new ComponentBuilder("Successfully put all permissions from group \"" + fromGroup + "\" into group \"" + toGroup + "\".").color(ChatColor.GREEN).create());
+                if (from.get().getPermissions().size() == 0) {
+                    sender.sendMessage(new TextComponent("§cNo permissions found in group \"" + args[1] + "\"."));
+                    return;
+                }
+
+                to.get().setPermissions(from.get().getPermissions());
+                sender.sendMessage(new ComponentBuilder("Successfully put all permissions from group \"" + args[1] + "\" into group \"" + args[2] + "\".").color(ChatColor.GREEN).create());
 
             } else if (subCommand.equalsIgnoreCase("reload")) {
 

@@ -18,7 +18,7 @@ public class MongoListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
-        MongoPerms.unlogAttachment(p);
+        MongoPerms.unLogAttachment(p);
     }
 
 }

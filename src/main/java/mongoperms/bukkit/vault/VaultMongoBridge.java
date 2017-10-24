@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,8 +54,8 @@ public class VaultMongoBridge extends Permission {
 
     @Override
     public boolean groupHas(String s, String s1, String s2) {
-        Group group = Group.getGroup(s1);
-        return group.getPermissions().contains(s2);
+        Optional<Group> group = Group.getGroup(s1);
+        return group.isPresent() && group.get().getPermissionsWithInheritances().contains(s2);
     }
 
     @Override

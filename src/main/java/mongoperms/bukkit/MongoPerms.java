@@ -97,15 +97,14 @@ public class MongoPerms extends JavaPlugin {
             name = getSettings().getDefaultGroup();
         }
 
-        Group group = Group.getGroup(name);
-        Preconditions.checkNotNull(group);
-
-        group.getPermissions().forEach(permission -> {
-            if (permission.startsWith("-")) {
-                attachment.setPermission(permission.substring(1), false);
-            } else {
-                attachment.setPermission(permission, true);
-            }
+        Group.getGroup(name).ifPresent(group -> {
+            group.getPermissions().forEach(permission -> {
+                if (permission.startsWith("-")) {
+                    attachment.setPermission(permission.substring(1), false);
+                } else {
+                    attachment.setPermission(permission, true);
+                }
+            });
         });
 
         attachments.put(getUUID(p.getName()), attachment);
@@ -116,7 +115,7 @@ public class MongoPerms extends JavaPlugin {
         return (Class<? extends HumanEntity>) Class.forName(Bukkit.getServer().getClass().getPackage().getName() + ".entity.CraftHumanEntity");
     }
 
-    public static void unlogAttachment(Player p) {
+    public static void unLogAttachment(Player p) {
         PermissionAttachment attachment = attachments.remove(getUUID(p.getName()));
 
         if (attachment == null) {
