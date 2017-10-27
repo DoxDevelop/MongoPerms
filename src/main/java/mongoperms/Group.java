@@ -80,11 +80,6 @@ public class Group {
         return permissions.contains(node);
     }
 
-    public static void create(String name, List<String> permissions, List<String> inherits) {
-        Group group = new Group(name, permissions, inherits);
-        groups.add(group);
-    }
-
     public static Optional<Group> getGroup(String name) {
         return groups.stream().filter(group -> group.getName().equalsIgnoreCase(name)).findAny();
     }
@@ -104,6 +99,11 @@ public class Group {
             groups.clear();
             MongoConnection.loadGroups();
         }
+    }
+
+    public static void create(String name, List<String> permissions, List<String> inherits) {
+        Group group = new Group(name, permissions, inherits);
+        groups.add(group);
     }
 
     public static void saveGroups() {
