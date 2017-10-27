@@ -12,6 +12,7 @@ import org.bukkit.plugin.Plugin;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.logging.Level;
 
 @RequiredArgsConstructor
 public class CommandRegistrar {
@@ -45,7 +46,7 @@ public class CommandRegistrar {
         }
 
         map.register(getClass().getSimpleName().toLowerCase(), cmd);
-        System.out.printf("[MongoPerms] Registered command %s", command.name());
+        plugin.getLogger().log(Level.INFO, "[MongoPerms] Registered command {0}", command.name());
     }
 
     @SneakyThrows

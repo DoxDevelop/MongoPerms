@@ -1,9 +1,9 @@
 package mongoperms.bukkit.vault;
 
+import mongoperms.Group;
 import mongoperms.MongoConnection;
 import mongoperms.MongoConnection.Result;
 import mongoperms.MongoPermsAPI;
-import mongoperms.Group;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 
 public class VaultMongoBridge extends Permission {
 
-    public VaultMongoBridge(Plugin vault, Plugin perms) {
-        System.out.printf("[%s][Permission] %s hooked.", vault.getDescription().getName(), "MongoPerms");
+    public VaultMongoBridge(Plugin perms) {
+        perms.getLogger().info("[MongoPerms] Vault permissions hooked.");
         Bukkit.getServicesManager().register(Permission.class, this, perms, ServicePriority.Highest);
     }
 
@@ -90,7 +90,7 @@ public class VaultMongoBridge extends Permission {
 
     @Override
     public String getPrimaryGroup(String world, String player) {
-        return MongoPermsAPI.getGroup(MongoPermsAPI.getUUID(player)).getName();
+        return MongoPermsAPI.getGroupOfPlayer(MongoPermsAPI.getUUID(player)).get().getName();
     }
 
     @Override

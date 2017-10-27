@@ -1,6 +1,5 @@
 package mongoperms.bukkit;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import lombok.Getter;
 import mongoperms.Configuration;
@@ -22,6 +21,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import static mongoperms.MongoPermsAPI.getUUID;
 
@@ -33,7 +33,7 @@ public class MongoPerms extends JavaPlugin {
     @Getter
     private static Configuration settings;
 
-    public static final Map<UUID, PermissionAttachment> attachments = Maps.newLinkedHashMap();
+    public static final Map<UUID, PermissionAttachment> ATTACHMENTS = Maps.newLinkedHashMap();
 
     private static Field field;
 
@@ -43,7 +43,7 @@ public class MongoPerms extends JavaPlugin {
             field = getCraftHumanEntityClass().getDeclaredField("perm");
             field.setAccessible(true);
         } catch (ReflectiveOperationException e1) {
-            System.out.println("[MongoPerms] Couldn't find CraftHumanEntityClass! Disabling plugin...");
+            getLogger().severe("[MongoPerms] Couldn't find CraftHumanEntityClass! Disabling plugin...");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -57,23 +57,36 @@ public class MongoPerms extends JavaPlugin {
         try {
             settings = Configuration.load();
         } catch (IOException e) {
+            getLogger().severe("[MongoPerms] Couldn't load configuration file.");
             throw new RuntimeException(e);
         }
 
-        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false, settings.isUseAuthentication());
+        MongoConnection.load(
+                settings.getMongoHost(),
+                settings.getMongoPort(),
+                settings.getDefaultGroup(),
+                settings.getMongoUsername(),
+                settings.getMongoPassword(),
+                false,
+                settings.isUseAuthentication()
+        );
 
         if (settings.isUseVault()) {
             Plugin vault = Bukkit.getPluginManager().getPlugin("Vault");
             if (vault != null) {
-                new VaultMongoBridge(vault, this);
+                new VaultMongoBridge(this);
+                getLogger().info("[MongoPerms] Using VaultMongoBridge.");
+            } else {
+                getLogger().warning("[MongoPerms] Couldn't find Vault plugin. Consider disabling \"use-vault\" setting in configuration.");
             }
         }
 
         getServer().getPluginManager().registerEvents(new MongoListener(), this);
+
         CommandRegistrar registrar = new CommandRegistrar(this);
         registrar.registerCommand(new ReloadCommand());
 
-        System.out.println("[MongoPerms] Enabled version: " + getDescription().getVersion());
+        getLogger().log(Level.INFO, "[MongoPerms] Enabled version: {0}", getDescription().getVersion());
 
     }
 
@@ -86,7 +99,7 @@ public class MongoPerms extends JavaPlugin {
         try {
             field.set(p, new CustomPermissibleBase(p));
         } catch (ReflectiveOperationException | NullPointerException e) {
-            e.printStackTrace();
+            getInstance().getLogger().log(Level.SEVERE, "[MongoPerms] Couldn't set permissible base. All-permission node will not work!", e);
         }
 
         PermissionAttachment attachment = p.addAttachment(instance);
@@ -107,7 +120,7 @@ public class MongoPerms extends JavaPlugin {
             });
         });
 
-        attachments.put(getUUID(p.getName()), attachment);
+        ATTACHMENTS.put(getUUID(p.getName()), attachment);
     }
 
     @SuppressWarnings("unchecked")
@@ -116,10 +129,10 @@ public class MongoPerms extends JavaPlugin {
     }
 
     public static void unLogAttachment(Player p) {
-        PermissionAttachment attachment = attachments.remove(getUUID(p.getName()));
+        PermissionAttachment attachment = ATTACHMENTS.remove(getUUID(p.getName()));
 
         if (attachment == null) {
-            System.err.println("[MongoPerms]" + p.getName() + "'s attachment is null?");
+            getInstance().getLogger().log(Level.WARNING, "[MongoPerms] Couldn't find {0}'s PermissionAttachment.", p.getName());
             return;
         }
 
