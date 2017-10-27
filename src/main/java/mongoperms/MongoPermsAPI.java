@@ -1,18 +1,22 @@
 package mongoperms;
 
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import lombok.SneakyThrows;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public class MongoPermsAPI {
@@ -21,6 +25,25 @@ public class MongoPermsAPI {
     private static final Map<String, UUID> UUID_MAP = Maps.newHashMap();
     private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
     private static final Gson gson = new Gson();
+    private static final LoadingCache<String, UUID> UUID_CACHE = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(1, TimeUnit.DAYS)
+            .build(new CacheLoader<String, UUID>() {
+                @Override
+                public UUID load(String name) throws Exception {
+                    HttpURLConnection connection = (HttpURLConnection) new URL("https://api.mojang.com/users/profiles/minecraft/" + name).openConnection();
+                    Preconditions.checkArgument(connection.getResponseCode() == HttpURLConnection.HTTP_OK,
+                            "Name is invalid. Response code: %s",
+                            String.valueOf(connection.getResponseCode())
+                    );
+                    return UUID.fromString(
+                            gson.fromJson(new BufferedReader(new InputStreamReader(connection.getInputStream())), JsonObject.class)
+                            .get("id")
+                            .getAsString()
+                            .replaceAll("(?i)(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w+)", "$1-$2-$3-$4-$5")
+                    );
+                }
+            });
 
     /**
      * Get a Collection of all permissions by the player
@@ -36,7 +59,6 @@ public class MongoPermsAPI {
         Optional<Group> groupOfPlayer = getGroupOfPlayer(uuid);
         return groupOfPlayer.isPresent() ? groupOfPlayer.get().getPermissionsWithInheritances() : Collections.emptySet();
     }
-
 
     /**
      * Get permissions of specified group
@@ -154,29 +176,21 @@ public class MongoPermsAPI {
      * @return UUID of player
      * @throws IllegalArgumentException if name is invalid / can't be found
      */
-    @SneakyThrows
     public static UUID getUUID(String name) {
-        if (UUID_MAP.containsKey(name)) {
-            return UUID_MAP.get(name);
+        try {
+            return UUID_CACHE.get(name);
+        } catch (ExecutionException e) {
+            return null;
         }
-        HttpURLConnection connection = (HttpURLConnection) new URL("https://api.mojang.com/users/profiles/minecraft/" + name).openConnection();
-        Preconditions.checkArgument(connection.getResponseCode() == HttpURLConnection.HTTP_OK, "Name is invalid. Response code: %s", String.valueOf(connection.getResponseCode()));
-        UUID uuid = UUID.fromString(gson.fromJson(new BufferedReader(new InputStreamReader(connection.getInputStream())), JsonObject.class)
-                .get("id")
-                .getAsString()
-                .replaceAll("(?i)(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w+)", "$1-$2-$3-$4-$5"));
-        UUID_MAP.put(name, uuid);
-        return uuid;
     }
 
     /**
      * Get UUID of a player asynchronously
      *
-     * @see MongoPermsAPI#getUUID(String)
-     *
-     * @param name name of player to lookup
+     * @param name     name of player to lookup
      * @param consumer accepting the uuid of player
      * @throws IllegalArgumentException if name is invalid / can't be found
+     * @see MongoPermsAPI#getUUID(String)
      */
     public static void getUUID(String name, Consumer<UUID> consumer) {
         EXECUTOR.execute(() -> consumer.accept(getUUID(name)));
