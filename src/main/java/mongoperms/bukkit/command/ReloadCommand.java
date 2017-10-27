@@ -1,7 +1,8 @@
 package mongoperms.bukkit.command;
 
-import mongoperms.MongoPermsAPI;
 import mongoperms.Group;
+import mongoperms.Messages;
+import mongoperms.MongoPermsAPI;
 import mongoperms.bukkit.MongoPerms;
 import mongoperms.bukkit.events.PermissionUpdatedEvent;
 import mongoperms.bukkit.events.PlayerPermissionUpdatedEvent;
@@ -19,12 +20,12 @@ public class ReloadCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String s, String[] args) {
         if (!sender.hasPermission("mongoperms.reload")) {
-            sender.sendMessage("§cYou are not allowed to use this command.");
+            sender.sendMessage(Messages.NO_PERMISSION.toString());
             return true;
         }
 
         if (MongoPerms.getSettings().isNeedOp() && !sender.isOp()) {
-            sender.sendMessage("§cYou need op to execute this command.");
+            sender.sendMessage(Messages.NO_OP.toString());
             return true;
         }
 
@@ -32,7 +33,7 @@ public class ReloadCommand implements CommandExecutor {
             Player p = Bukkit.getPlayer(args[0]);
 
             if (p == null || !p.isOnline()) {
-                sender.sendMessage("§cCan't find player: " + args[0]);
+                sender.sendMessage(Messages.CANT_FIND_PLAYER.toString(args[0]));
                 return true;
             }
 
@@ -40,18 +41,18 @@ public class ReloadCommand implements CommandExecutor {
             MongoPerms.generateAttachment(p);
             MongoPermsAPI.clear(getUUID(p.getName()));
             Bukkit.getPluginManager().callEvent(new PlayerPermissionUpdatedEvent(p));
-            sender.sendMessage("§aPlayer " + p.getName() + " has been reloaded.");
+            sender.sendMessage(Messages.RELOADED_PLAYER.toString(p.getName()));
             return true;
         }
 
         Bukkit.getOnlinePlayers().forEach(MongoPerms::unLogAttachment);
 
-        sender.sendMessage("§a" + Group.getGroups().size() + " groups loaded.");
+        sender.sendMessage(Messages.RELOADED_GROUPS.toString(Group.getGroups().size()));
         MongoPermsAPI.clear();
         Bukkit.getPluginManager().callEvent(new PermissionUpdatedEvent());
 
         Bukkit.getOnlinePlayers().forEach(MongoPerms::generateAttachment);
-        sender.sendMessage("§a" + MongoPerms.attachments.size() + " players registered.");
+        sender.sendMessage(Messages.REGISTERED_PLAYERS.toString(MongoPerms.ATTACHMENTS.size()));
         return false;
     }
 
