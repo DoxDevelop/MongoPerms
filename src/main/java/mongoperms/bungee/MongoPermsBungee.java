@@ -62,7 +62,7 @@ public class MongoPermsBungee extends Plugin implements Listener {
         if (sender instanceof ProxiedPlayer) {
             ProxiedPlayer p = (ProxiedPlayer) e.getSender();
 
-            Collection<String> permissions = MongoPermsAPI.getGroup(p.getUniqueId()).getPermissions();
+            Collection<String> permissions = MongoPermsAPI.getGroupOfPlayer(p.getUniqueId()).get().getPermissionsWithInheritances();
 
             if (permissions.contains(settings.getPermissionNode()) || permissions.contains(e.getPermission())) {
                 e.setHasPermission(true);
