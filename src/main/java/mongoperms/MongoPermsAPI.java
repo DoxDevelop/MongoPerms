@@ -25,25 +25,14 @@ public class MongoPermsAPI {
     private static final Map<String, UUID> UUID_MAP = Maps.newHashMap();
     private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
     private static final Gson gson = new Gson();
-    private static final LoadingCache<String, UUID> UUID_CACHE = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(1, TimeUnit.DAYS)
-            .build(new CacheLoader<String, UUID>() {
-                @Override
-                public UUID load(String name) throws Exception {
-                    HttpURLConnection connection = (HttpURLConnection) new URL("https://api.mojang.com/users/profiles/minecraft/" + name).openConnection();
-                    Preconditions.checkArgument(connection.getResponseCode() == HttpURLConnection.HTTP_OK,
-                            "Name is invalid. Response code: %s",
-                            String.valueOf(connection.getResponseCode())
-                    );
-                    return UUID.fromString(
-                            gson.fromJson(new BufferedReader(new InputStreamReader(connection.getInputStream())), JsonObject.class)
-                            .get("id")
-                            .getAsString()
-                            .replaceAll("(?i)(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w+)", "$1-$2-$3-$4-$5")
-                    );
-                }
-            });
+    private static final LoadingCache<String, UUID> UUID_CACHE = CacheBuilder.newBuilder().maximumSize(1000).expireAfterWrite(1, TimeUnit.DAYS).build(new CacheLoader<String, UUID>() {
+        @Override
+        public UUID load(String name) throws Exception {
+            HttpURLConnection connection = (HttpURLConnection) new URL("https://api.mojang.com/users/profiles/minecraft/" + name).openConnection();
+            Preconditions.checkArgument(connection.getResponseCode() == HttpURLConnection.HTTP_OK, "Name is invalid. Response code: %s", String.valueOf(connection.getResponseCode()));
+            return UUID.fromString(gson.fromJson(new BufferedReader(new InputStreamReader(connection.getInputStream())), JsonObject.class).get("id").getAsString().replaceAll("(?i)(\\w{8})(\\w{4})(\\w{4})(\\w{4})(\\w+)", "$1-$2-$3-$4-$5"));
+        }
+    });
 
     /**
      * Get a Collection of all permissions by the player

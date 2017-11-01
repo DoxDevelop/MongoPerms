@@ -50,8 +50,7 @@ public class MongoConnection {
             return;
         }
 
-        collection.insertOne(new Document("uuid", uuid.toString())
-                .append("group", DEFAULT_GROUP));
+        collection.insertOne(new Document("uuid", uuid.toString()).append("group", DEFAULT_GROUP));
     }
 
     public static void setGroup(UUID uuid, String group) {
@@ -74,10 +73,7 @@ public class MongoConnection {
             return Result.GROUP_ALREADY_EXISTS;
         }
 
-        collection.insertOne(new Document("group", group)
-                .append("permissions", Lists.newArrayList())
-                .append("inherits", Lists.newArrayList())
-        );
+        collection.insertOne(new Document("group", group).append("permissions", Lists.newArrayList()).append("inherits", Lists.newArrayList()));
 
         Group.create(group, Lists.newArrayList(), Lists.newArrayList());
         return Result.SUCCESS;

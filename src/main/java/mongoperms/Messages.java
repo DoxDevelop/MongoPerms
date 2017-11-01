@@ -58,9 +58,7 @@ public enum Messages {
 
     public BaseComponent[] toComponent(Object... args) {
         if (color == null) {
-            return new BaseComponent[]{
-                    new TextComponent(toString(args))
-            };
+            return new BaseComponent[] {new TextComponent(toString(args))};
         }
         return new ComponentBuilder(toString(args)).color(color).create(); //using ComponentBuilder in case of very long messages
     }

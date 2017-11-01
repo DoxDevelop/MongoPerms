@@ -63,9 +63,8 @@ public class CommandRegistrar {
 
         if (constructor.getParameterTypes().length == 0) {
             return constructor.newInstance();
-        } else {
-            return constructor.newInstance(this);
         }
+        return constructor.newInstance(this);
     }
 
     @SneakyThrows

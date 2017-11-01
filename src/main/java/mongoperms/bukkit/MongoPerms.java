@@ -61,15 +61,7 @@ public class MongoPerms extends JavaPlugin {
             throw new RuntimeException(e);
         }
 
-        MongoConnection.load(
-                settings.getMongoHost(),
-                settings.getMongoPort(),
-                settings.getDefaultGroup(),
-                settings.getMongoUsername(),
-                settings.getMongoPassword(),
-                false,
-                settings.isUseAuthentication()
-        );
+        MongoConnection.load(settings.getMongoHost(), settings.getMongoPort(), settings.getDefaultGroup(), settings.getMongoUsername(), settings.getMongoPassword(), false, settings.isUseAuthentication());
 
         if (settings.isUseVault()) {
             Plugin vault = Bukkit.getPluginManager().getPlugin("Vault");
