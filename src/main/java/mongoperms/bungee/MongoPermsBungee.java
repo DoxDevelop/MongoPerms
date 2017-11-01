@@ -5,6 +5,7 @@ import mongoperms.Configuration;
 import mongoperms.Group;
 import mongoperms.MongoConnection;
 import mongoperms.MongoPermsAPI;
+import mongoperms.bungee.commands.PermissionsCommand;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.PermissionCheckEvent;
