@@ -11,8 +11,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
 
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class VaultMongoBridge extends Permission {
 
@@ -85,7 +83,7 @@ public class VaultMongoBridge extends Permission {
 
     @Override
     public String[] getPlayerGroups(String world, String player) {
-        return new String[]{getPrimaryGroup(world, player)};
+        return new String[] {getPrimaryGroup(world, player)};
     }
 
     @Override
@@ -95,8 +93,7 @@ public class VaultMongoBridge extends Permission {
 
     @Override
     public String[] getGroups() {
-        Set<String> groups = Group.getGroups().stream().map(Group::getName).collect(Collectors.toSet());
-        return groups.toArray(new String[0]);
+        return Group.getGroups().stream().map(Group::getName).distinct().toArray(String[]::new);
     }
 
     @Override
